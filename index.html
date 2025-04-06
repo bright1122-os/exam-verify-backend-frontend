@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="adaptive">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus Horizon | Banking Reimagined</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+    <style>
+        :root {
+            --primary: #0066ff;
+            --primary-dark: #0047b3;
+            --secondary: #00c4ff;
+            --accent: #7b2dff;
+            --success: #00d18c;
+            --warning: #ffb800;
+            --danger: #ff3860;
+            --dark: #121826;
+            --light: #f8f9ff;
+            --gray: #e2e5ed;
+            --gray-dark: #6c7389;
+        }
+
+        [data-theme="dark"] {
+            --primary: #3a86ff;
+            --primary-dark: #2667cc;
+            --secondary: #00f5d4;
+            --accent: #b517ff;
+            --success: #00f5a0;
+            --warning: #ffd166;
+            --danger: #ef476f;
+            --dark: #0a0e17;
+            --light: #e2e8ff;
+            --gray: #2a3044;
+            --gray-dark: #a0a7bd;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: var(--dark);
+            color: var(--light);
+            line-height: 1.6;
+            overflow-x: hidden;
+            transition: background 0.3s ease;
+        }
+
+        /* Holographic UI Elements */
+        .holographic-card {
+            position: relative;
+            background: rgba(18, 24, 38, 0.6);
+            border-radius: 24px;
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .holographic-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                45deg,
+                transparent 0%,
+                rgba(123, 45, 255, 0.1) 30%,
+                rgba(0, 196, 255, 0.1) 70%,
+                transparent 100%
+            );
+            transform: rotate(30deg);
+            animation: holographic-shine 8s infinite linear;
+            pointer-events: none;
+        }
+
+        @keyframes holographic-shine {
+            0% { transform: rotate(30deg) translateX(-50%) translateY(-50%); }
+            100% { transform: rotate(30deg) translateX(50%) translateY(50%); }
+        }
+
+        /* Main Layout */
+        .app-container {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            padding: 2rem 1.5rem;
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            position: relative;
+            z-index: 10;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 3rem;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--light), var(--gray-dark));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .nav-item.active {
+            background: rgba(0, 102, 255, 0.15);
+            color: var(--primary);
+        }
+
+        .nav-item.active .nav-icon {
+            color: var(--primary);
+        }
+
+        .nav-icon {
+            font-size: 1.25rem;
+            color: var(--gray-dark);
+        }
+
+        /* Main Content */
+        .main-content {
+            padding: 2rem 3rem;
+            position: relative;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .greeting h1 {
+            font-size: 2rem;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .greeting p {
+            color: var(--gray-dark);
+            font-size: 0.9rem;
+        }
+
+        .user-controls {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .notification-bell {
+            position: relative;
+            padding: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            cursor: pointer;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 8px;
+            height: 8px;
+            background: var(--danger);
+            border-radius: 50%;
+            border: 2px solid var(--dark);
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 24px;
+        }
+
+        /* Account Summary */
+        .account-summary {
+            grid-column: span 8;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .account-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .account-title {
+            font-size: 1.25rem;
+            font-weight: 500;
+        }
+
+        .account-balance {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 1rem 0;
+            letter-spacing: -1px;
+        }
+
+        .account-number {
+            font-family: 'IBM Plex Mono', monospace;
+            color: var(--gray-dark);
+            font-size: 0.85rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .account-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .action-btn {
+            padding: 12px 20px;
+            border-radius: 12px;
+            border: none;
+            font-family: inherit;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .primary-btn {
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            color: white;
+        }
+
+        .primary-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 102, 255, 0.3);
+        }
+
+        .secondary-btn {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--light);
+        }
+
+        .secondary-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            grid-column: span 4;
+            padding: 2rem;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 1.5rem;
+        }
+
+        .action-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .action-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem 1rem;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.03);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .action-card:hover {
+            background: rgba(255, 255, 255, 0.07);
+            transform: translateY(-4px);
+        }
+
+        .action-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px;
+        }
+
+        .action-icon.pay {
+            background: rgba(0, 193, 255, 0.1);
+            color: var(--secondary);
+        }
+
+        .action-icon.transfer {
+            background: rgba(123, 45, 255, 0.1);
+            color: var(--accent);
+        }
+
+        .action-icon.deposit {
+            background: rgba(0, 209, 140, 0.1);
+            color: var(--success);
+        }
+
+        .action-icon.invest {
+            background: rgba(255, 184, 0, 0.1);
+            color: var(--warning);
+        }
+
+        .action-label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        /* Recent Transactions */
+        .recent-transactions {
+            grid-column: span 8;
+            padding: 2rem;
+            margin-top: 24px;
+        }
+
+        .transactions-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .view-all {
+            color: var(--primary);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .view-all:hover {
+            text-decoration: underline;
+        }
+
+        .transactions-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .transaction-item {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            transition: all 0.2s ease;
+        }
+
+        .transaction-item:hover {
+            background: rgba(255, 255, 255, 0.07);
+        }
+
+        .transaction-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 16px;
+            flex-shrink: 0;
+        }
+
+        .transaction-details {
+            flex-grow: 1;
+        }
+
+        .transaction-name {
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .transaction-date {
+            font-size: 0.8rem;
+            color: var(--gray-dark);
+        }
+
+        .transaction-amount {
+            font-weight: 500;
+            font-family: 'IBM Plex Mono', monospace;
+        }
+
+        .transaction-amount.positive {
+            color: var(--success);
+        }
+
+        .transaction-amount.negative {
+            color: var(--danger);
+        }
+
+        /* Financial Insights */
+        .financial-insights {
+            grid-column: span 4;
+            padding: 2rem;
+            margin-top: 24px;
+        }
+
+        .insight-card {
+            padding: 1.5rem;
+            border-radius: 16px;
+            background: rgba(123, 45, 255, 0.05);
+            border: 1px solid rgba(123, 45, 255, 0.1);
+            margin-bottom: 16px;
+        }
+
+        .insight-title {
+            font-size: 0.95rem;
+            font-weight: 500;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .insight-text {
+            font-size: 0.9rem;
+            color: var(--gray-dark);
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+
+        .insight-action {
+            color: var(--accent);
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .insight-action:hover {
+            text-decoration: underline;
+        }
+
+        /* Spending Chart */
+        .spending-chart {
+            grid-column: span 12;
+            padding: 2rem;
+            margin-top: 24px;
+            height: 400px;
+        }
+
+        .chart-placeholder {
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--gray-dark);
+            font-size: 0.9rem;
+        }
+
+        /* AI Assistant */
+        .ai-assistant {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), var(--primary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 8px 32px rgba(123, 45, 255, 0.3);
+            z-index: 100;
+            transition: all 0.3s ease;
+        }
+
+        .ai-assistant:hover {
+            transform: scale(1.1);
+        }
+
+        .ai-pulse {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: rgba(123, 45, 255, 0.3);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .app-container {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                display: none;
+            }
+
+            .account-summary, .quick-actions, .recent-transactions, .financial-insights, .spending-chart {
+                grid-column: span 12;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 1.5rem;
+            }
+
+            .account-actions {
+                flex-direction: column;
+            }
+
+            .action-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L3 7L12 12L21 7L12 2Z" fill="white" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M3 12L12 17L21 12" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M3 17L12 22L21 17" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <div class="logo-text">Nexus</div>
+            </div>
+
+            <nav class="nav-menu">
+                <div class="nav-item active">
+                    <span class="nav-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3 10L12 3L21 10L21 20C21 20.5523 20.5523 21 20 21H4C3.44772 21 3 20.5523 3 20L3 10Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M9 21V12H15V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </span>
+                    <span>Dashboard</span>
+                </div>
+                <div class="nav-item">
+                    <span class="nav-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </span>
+                    <span>Transactions</span>
+                </div>
+                <div class="nav-item">
+                    <span class="nav-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M8 12L12 16L16 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M12 8V16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M21 12C21 13.1819 20.7672 14.3522 20.3149 15.4442C19.8626 16.5361 19.1997 17.5282 18.364 18.364C17.5282 19.1997 16.5361 19.8626 15.4442 20.3149C14.3522 20.7672 13.1819 21 12 21C10.8181 21 9.64778 20.7672 8.55585 20.3149C7.46392 19.8626 6.47177 19.1997 5.63604 18.364C4.80031 17.5282 4.13738 16.5361 3.68508 15.4442C3.23279 14.3522 3 13.1819 3 12C3 9.61305 3.94821 7.32387 5.63604 5.63604C7.32387 3.94821 9.61305 3 12 3C14.3869 3 16.6761 3.94821 18.364 5.63604C20.0518 7.32387 21 9.61305 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </span>
+                    <span>Investments</span>
+                </div>
+                <div class="nav-item">
+                    <span class="nav-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M12 8V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </span>
+                    <span>Loans</span>
+                </div>
+                <div class="nav-item">
+                    <span class="nav-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M19.4 15C19.2669 15.3016 19.227 15.6362 19.2883 15.9606C19.3496 16.285 19.51 16.5834 19.7487 16.8141C19.9873 17.0448 20.2925 17.1959 20.62 17.2465C20.9476 17.2971 21.2806 17.2447 21.574 17.097L21.6 17.1C21.6935 17.1135 21.7885 17.1135 21.882 17.1C22.1975 17.0583 22.5027 16.9434 22.7733 16.7637C23.0439 16.584 23.2729 16.344 23.4429 16.0619C23.6129 15.7798 23.7194 15.4628 23.7546 15.133C23.7898 14.8031 23.7527 14.4694 23.646 14.156L21.746 9.25601C21.6393 8.94256 21.4659 8.6579 21.2391 8.42396C21.0123 8.19002 20.738 8.01298 20.436 7.90601L15.536 6.00601C15.2226 5.8993 14.8889 5.86223 14.5591 5.89742C14.2292 5.93261 13.9122 6.03912 13.6301 6.20913C13.348 6.37914 13.108 6.6081 12.9283 6.87872C12.7486 7.14934 12.6337 7.45452 12.592 7.77001C12.5785 7.86352 12.5785 7.95852 12.592 8.05201L12.903 8.42601C13.0503 8.71942 13.0979 9.05239 13.0463 9.37994C12.9947 9.7075 12.8436 10.0127 12.6129 10.2513C12.3822 10.49 12.0838 10.6504 11.7594 10.7117C11.435 10.773 11.1004 10.7331 10.7988 10.6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M2.40039 15C2.53352 15.3016 2.57338 15.6362 2.51209 15.9606C2.4508 16.285 2.29042 16.5834 2.05174 16.8141C1.81306 17.0448 1.50785 17.1959 1.18031 17.2465C0.852764 17.2971 0.519766 17.2447 0.226391 17.097L0.200391 17.1C0.10687 17.1135 0.011873 17.1135 -0.0816489 17.1C-0.397134 17.0583 -0.702315 16.9434 -0.972936 16.7637C-1.24356 16.584 -1.47252 16.344 -1.64253 16.0619C-1.81254 15.7798 -1.91905 15.4628 -1.95424 15.133C-1.98943 14.8031 -1.95236 14.4694 -1.84565 14.156L0.0543514 9.25601C0.161063 8.94256 0.334475 8.6579 0.561313 8.42396C0.788151 8.19002 1.06246 8.01298 1.36445 7.90601L6.26445 6.00601C6.5779 5.8993 6.91161 5.86223 7.24146 5.89742C7.57131 5.93261 7.88831 6.03912 8.17042 6.20913C8.45253 6.37914 8.69253 6.6081 8.87222 6.87872C9.05191 7.14934 9.16682 7.45452 9.20852 7.77001C9.22203 7.86352 9.22203 7.95852 9.20852 8.05201L8.89752 8.42601C8.75022 8.71942 8.70262 9.05239 8.75421 9.37994C8.8058 9.7075 8.95691 10.0127 9.18761 10.2513C9.41831 10.49 9.71673 10.6504 10.0411 10.7117C10.3655 10.773 10.7001 10.7331 11.0017 10.6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </span>
+                    <span>Settings</span>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Header with Greeting and User Controls -->
+            <header class="header">
+                <div class="greeting">
+                    <h1>Good afternoon, Alex</h1>
+                    <p>Welcome back to your financial hub. Here's what's happening today.</p>
+                </div>
+
+                <div class="user-controls">
+                    <div class="notification-bell">
+                        <div class="notification-badge"></div>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M18 8C18 6.4087 17.3679 4.88258 16.2426 3.75736C15.1174 2.63214 13.5913 2 12 2C10.4087 2 8.88258 2.63214 7.75736 3.75736C6.63214 4.88258 6 6.4087 6 8C6 15 3 17 3 17H21C21 17 18 15 18 8Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M13.73 21C13.5542 21.3031 13.3019 21.5547 12.9982 21.7295C12.6946 21.9044 12.3504 21.9965 12 21.9965C11.6496 21.9965 11.3054 21.9044 11.0018 21.7295C10.6982 21.5547 10.4458 21.3031 10.27 21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div class="user-avatar">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Dashboard Grid -->
+            <div class="dashboard-grid">
+                <!-- Account Summary Card -->
+                <div class="holographic-card account-summary">
+                    <div class="account-header">
+                        <div class="account-title">Primary Account</div>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 8V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M3 12C3 13.1819 3.23279 14.3522 3.68508 15.4442C4.13738 16.5361 4.80031 17.5282 5.63604 18.364C6.47177 19.1997 7.46392 19.8626 8.55585 20.3149C9.64778 20.7672 10.8181 21 12 21C13.1819 21 14.3522 20.7672 15.4442 20.3149C16.5361 19.8626 17.5282 19.1997 18.364 18.364C19.1997 17.5282 19.8626 16.5361 20.3149 15.4442C20.7672 14.3522 21 13.1819 21 12C21 10.8181 20.7672 9.64778 20.3149 8.55585C19.8626 7.46392 19.1997 6.47177 18.364 5.63604C17.5282 4.80031 16.5361 4.13738 15.4442 3.68508C14.3522 3.23279 13.1819 3 12 3C10.8181 3 9.64778 3.23279 8.55585 3.68508C7.46392 4.13738 6.47177 4.80031 5.63604 5.63604C4.80031 6.47177 4.13738 7.46392 3.68508 8.55585C3.23279 9.64778 3 10.8181 3 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div class="account-balance">$42,689.42</div>
+                    <div class="account-number">•••• •••• •••• 4582</div>
+                    <div class="account-actions">
+                        <button class="action-btn primary-btn">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 5V19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            Send Money
+                        </button>
+                        <button class="action-btn secondary-btn">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M4 4H20C21.1046 4 22 4.89543 22 6V18C22 19.1046 21.1046 20 20 20H4C2.89543 20 2 19.1046 2 18V6C2 4.89543 2.89543 4 4 4Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M22 6L12 13L2 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            Request
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quick Actions Card -->
+                <div class="holographic-card quick-actions">
+                    <h3 class="section-title">Quick Actions</h3>
+                    <div class="action-grid">
+                        <div class="action-card">
+                            <div class="action-icon pay">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M18 8H6C4.89543 8 4 8.89543 4 10V18C4 19.1046 4.89543 20 6 20H18C19.1046 20 20 19.1046 20 18V10C20 8.89543 19.1046 8 18 8Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M4 10V8C4 6.89543 4.89543 6 6 6H18C19.1046 6 20 6.89543 20 8V10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M12 15C13.1046 15 14 14.1046 14 13C14 11.8954 13.1046 11 12 11C10.8954 11 10 11.8954 10 13C10 14.1046 10.8954 15 12 15Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <span class="action-label">Pay Bills</span>
+                        </div>
+                        <div class="action-card">
+                            <div class="action-icon transfer">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M7 16L3 12L7 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M17 8L21 12L17 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M3 12H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <span class="action-label">Transfer</span>
+                        </div>
+                        <div class="action-card">
+                            <div class="action-icon deposit">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M8 17L12 21L16 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M12 12V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M20 9H4C2.89543 9 2 8.10457 2 7V4C2 2.89543 2.89543 2 4 2H20C21.1046 2 22 2.89543 22 4V7C22 8.10457 21.1046 9 20 9Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <span class="action-label">Deposit</span>
+                        </div>
+                        <div class="action-card">
+                            <div class="action-icon invest">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <span class="action-label">Invest</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Transactions Card -->
+                <div class="holographic-card recent-transactions">
+                    <div class="transactions-header">
+                        <h3 class="section-title">Recent Transactions</h3>
+                        <span class="view-all">View All</span>
+                    </div>
+                    <div class="transactions-list">
+                        <div class="transaction-item">
+                            <div class="transaction-icon" style="background: rgba(0, 193, 255, 0.1); color: var(--secondary);">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M16 16L21 21M21 16L16 21M12 8H12.01M18 12H18.01M6 12H6.01M12 12H12.01M12 16H12.01M12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12C21 16.9706 16.9706 21 12 21Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <div class="transaction-details">
+                                <div class="transaction-name">Netflix Subscription</div>
+                                <div class="transaction-date">Today, 10:45 AM</div>
+                            </div>
+                            <div class="transaction-amount negative">-$14.99</div>
+                        </div>
+                        <div class="transaction-item">
+                            <div class="transaction-icon" style="background: rgba(123, 45, 255, 0.1); color: var(--accent);">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M8 14C8 14 9.5 16 12 16C14.5 16 16 14 16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M9 9H9.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M15 9H15.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <div class="transaction-details">
+                                <div class="transaction-name">Salary Deposit</div>
+                                <div class="transaction-date">Yesterday, 9:00 AM</div>
+                            </div>
+                            <div class="transaction-amount positive">+$3,850.00</div>
+                        </div>
+                        <div class="transaction-item">
+                            <div class="transaction-icon" style="background: rgba(0, 209, 140, 0.1); color: var(--success);">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M3 10H21M7 3V5M17 3V5M6.2 21H17.8C18.9201 21 19.4802 21 19.908 20.782C20.2843 20.5903 20.5903 20.2843 20.782 19.908C21 19.4802 21 18.9201 21 17.8V8.2C21 7.07989 21 6.51984 20.782 6.09202C20.5903 5.71569 20.2843 5.40973 19.908 5.21799C19.4802 5 18.9201 5 17.8 5H6.2C5.0799 5 4.51984 5 4.09202 5.21799C3.71569 5.40973 3.40973 5.71569 3.21799 6.09202C3 6.51984 3 7.07989 3 8.2V17.8C3 18.9201 3 19.4802 3.21799 19.908C3.40973 20.2843 3.71569 20.5903 4.09202 20.782C4.51984 21 5.07989 21 6.2 21Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <div class="transaction-details">
+                                <div class="transaction-name">Grocery Store</div>
+                                <div class="transaction-date">Mar 28, 2024</div>
+                            </div>
+                            <div class="transaction-amount negative">-$87.23</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Financial Insights Card -->
+                <div class="holographic-card financial-insights">
+                    <h3 class="section-title">Financial Insights</h3>
+                    <div class="insight-card">
+                        <h4 class="insight-title">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M12 16V12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M12 8H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            Spending Alert
+                        </h4>
+                        <p class="insight-text">Your dining out expenses are 15% higher than last month. Consider setting a budget for restaurants.</p>
+                        <span class="insight-action">Set Budget Now</span>
+                    </div>
+                    <div class="insight-card" style="background: rgba(0, 102, 255, 0.05); border-color: rgba(0, 102, 255, 0.1);">
+                        <h4 class="insight-title">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M22 12H18L15 21L9 3L6 12H2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            Investment Opportunity
+                        </h4>
+                        <p class="insight-text">Based on your savings pattern, you could earn $1,200 more annually by moving funds to a high-yield account.</p>
+                        <span class="insight-action" style="color: var(--primary);">Explore Options</span>
+                    </div>
+                </div>
+
+                <!-- Spending Chart -->
+                <div class="holographic-card spending-chart">
+                    <div class="chart-placeholder">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3 3V19H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M3 9L8 6L12 9L21 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Monthly Spending Trends
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- AI Assistant Floating Button -->
+    <div class="ai-assistant">
+        <div class="ai-pulse"></div>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 18C15.3137 18 18 15.3137 18 12C18 8.68629 15.3137 6 12 6C8.68629 6 6 8.68629 6 12C6 15.3137 8.68629 18 12 18Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M19.07 4.92999L4.92999 19.07" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+    </div>
+
+    <script>
+        // Theme switcher (would be more sophisticated in production)
+        const themes = ['adaptive', 'dark', 'light'];
+        let currentTheme = 0;
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 't') {
+                currentTheme = (currentTheme + 1) % themes.length;
+                document.documentElement.setAttribute('data-theme', themes[currentTheme]);
+            }
+        });
+
+        // Simulate dynamic balance update
+        setInterval(() => {
+            const balanceElement = document.querySelector('.account-balance');
+            if (balanceElement) {
+                const currentBalance = parseFloat(balanceElement.textContent.replace(/[^0-9.-]/g, ''));
+                const fluctuation = (Math.random() * 2 - 1) * 0.5; // Small random fluctuation
+                const newBalance = currentBalance + fluctuation;
+                balanceElement.textContent = '$' + newBalance.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            }
+        }, 30000); // Update every 30 seconds
+
+        // AI Assistant interaction
+        const aiAssistant = document.querySelector('.ai-assistant');
+        if (aiAssistant) {
+            aiAssistant.addEventListener('click', () => {
+                alert('Nexus AI: How can I assist you with your finances today?');
+            });
+        }
+
+        // Simulate real-time notifications
+        setTimeout(() => {
+            const notificationBadge = document.querySelector('.notification-badge');
+            if (notificationBadge) {
+                notificationBadge.style.display = 'block';
+            }
+        }, 5000);
+    </script>
+    <script src="script.js"></script>
+</body> 
+</html>
