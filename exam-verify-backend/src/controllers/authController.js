@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import { successResponse, errorResponse } from '../utils/response.js';
 import logger from '../utils/logger.js';
+import { sendWelcomeEmail } from '../services/emailService.js';
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -42,6 +43,11 @@ export const register = async (req, res) => {
     const token = generateToken(user._id);
 
     logger.info(`New ${userRole} registered: ${email}`);
+
+    // Send welcome email (non-blocking)
+    sendWelcomeEmail({ name: user.name, email: user.email }).catch(err =>
+      logger.error('Welcome email failed:', err)
+    );
 
     successResponse(res, {
       token,

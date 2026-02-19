@@ -4,6 +4,7 @@ import { successResponse, errorResponse } from '../utils/response.js';
 import logger from '../utils/logger.js';
 import { getIO } from '../config/socket.js';
 import { decrypt } from '../utils/crypto.js';
+import { sendVerificationResult } from '../services/emailService.js';
 
 // @desc    Scan and decode QR code
 // @route   POST /api/v1/examiner/scan
@@ -111,6 +112,14 @@ export const approveEntry = async (req, res) => {
       // Socket not initialized, skip
     }
 
+    // Send email notification (non-blocking)
+    if (student.userId?.email) {
+      sendVerificationResult(
+        { name: student.userId.name, email: student.userId.email },
+        verification
+      ).catch(err => logger.error('Approval email failed:', err));
+    }
+
     successResponse(res, {
       verification,
       message: 'Student entry approved successfully',
@@ -163,6 +172,14 @@ export const denyEntry = async (req, res) => {
       });
     } catch {
       // Socket not initialized, skip
+    }
+
+    // Send email notification (non-blocking)
+    if (student.userId?.email) {
+      sendVerificationResult(
+        { name: student.userId.name, email: student.userId.email },
+        verification
+      ).catch(err => logger.error('Denial email failed:', err));
     }
 
     successResponse(res, {

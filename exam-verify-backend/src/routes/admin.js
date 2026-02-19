@@ -8,6 +8,9 @@ import {
   getAllVerifications,
   getAllUsers,
   updateUserRole,
+  exportStudentsCSV,
+  exportVerificationsCSV,
+  exportPaymentsCSV,
 } from '../controllers/adminController.js';
 import { protect, authorize } from '../middleware/auth.js';
 
@@ -34,5 +37,10 @@ router.get('/verifications', getAllVerifications);
 // Users
 router.get('/users', getAllUsers);
 router.put('/users/:id/role', updateUserRole);
+
+// CSV Exports
+router.get('/export/students', exportStudentsCSV);
+router.get('/export/verifications', exportVerificationsCSV);
+router.get('/export/payments', exportPaymentsCSV);
 
 export default router;

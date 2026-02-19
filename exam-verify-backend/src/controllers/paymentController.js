@@ -4,6 +4,7 @@ import remitaService from '../services/remitaService.js';
 import { successResponse, errorResponse } from '../utils/response.js';
 import logger from '../utils/logger.js';
 import { generateQRCode } from '../services/qrService.js';
+import { sendPaymentConfirmation } from '../services/emailService.js';
 
 // @desc    Initiate payment (generate RRR)
 // @route   POST /api/v1/payment/initiate
@@ -122,6 +123,15 @@ export const verifyPayment = async (req, res) => {
     const qrResult = await generateQRCode(payment.studentId._id);
 
     logger.info(`Payment verified for student ${payment.studentId.matricNumber}`);
+
+    // Send payment confirmation email (non-blocking)
+    const studentWithUser = await Student.findById(payment.studentId._id).populate('userId', 'name email');
+    if (studentWithUser?.userId?.email) {
+      sendPaymentConfirmation(
+        { name: studentWithUser.userId.name, email: studentWithUser.userId.email },
+        payment
+      ).catch(err => logger.error('Payment confirmation email failed:', err));
+    }
 
     successResponse(res, {
       payment: {

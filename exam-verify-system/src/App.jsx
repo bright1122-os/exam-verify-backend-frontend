@@ -15,6 +15,7 @@ import SignUp from './pages/auth/SignUp';
 import StudentDashboard from './pages/student/Dashboard';
 import StudentRegister from './pages/student/Register';
 import PrintQR from './pages/student/PrintQR';
+import VerificationStatus from './pages/student/VerificationStatus';
 
 // Examiner Pages
 import ExaminerDashboard from './pages/examiner/Dashboard';
@@ -22,6 +23,9 @@ import ScanPortal from './pages/examiner/ScanPortal';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/Dashboard';
+
+// Shared Pages
+import Settings from './pages/Settings';
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -79,6 +83,11 @@ function App() {
               <PrintQR />
             </ProtectedRoute>
           } />
+          <Route path="/student/verification" element={
+            <ProtectedRoute allowedRoles={['student']}>
+              <VerificationStatus />
+            </ProtectedRoute>
+          } />
 
           {/* Examiner Routes */}
           <Route path="/examiner/dashboard" element={
@@ -96,6 +105,13 @@ function App() {
           <Route path="/admin/dashboard" element={
             <ProtectedRoute allowedRoles={['admin']}>
               <AdminDashboard />
+            </ProtectedRoute>
+          } />
+
+          {/* Settings (all authenticated users) */}
+          <Route path="/settings" element={
+            <ProtectedRoute allowedRoles={['student', 'examiner', 'admin']}>
+              <Settings />
             </ProtectedRoute>
           } />
 
