@@ -34,6 +34,63 @@
             --gray-dark: #a0a7bd;
         }
 
+        [data-theme="light"] {
+            --primary: #0052cc;
+            --primary-dark: #003d99;
+            --secondary: #0095b3;
+            --accent: #6320c0;
+            --success: #00a86b;
+            --warning: #d49a00;
+            --danger: #d9304a;
+            --dark: #f4f6fb;
+            --light: #1a1f2e;
+            --gray: #dce0ea;
+            --gray-dark: #5a6178;
+        }
+
+        [data-theme="light"] .holographic-card {
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+        }
+
+        [data-theme="light"] .holographic-card::before {
+            background: linear-gradient(
+                45deg,
+                transparent 0%,
+                rgba(0, 102, 255, 0.04) 30%,
+                rgba(123, 45, 255, 0.04) 70%,
+                transparent 100%
+            );
+        }
+
+        [data-theme="light"] .sidebar {
+            border-right: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        [data-theme="light"] .transaction-item,
+        [data-theme="light"] .action-card {
+            background: rgba(0, 0, 0, 0.02);
+        }
+
+        [data-theme="light"] .transaction-item:hover,
+        [data-theme="light"] .action-card:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        [data-theme="light"] .secondary-btn {
+            background: rgba(0, 0, 0, 0.04);
+            color: var(--light);
+        }
+
+        [data-theme="light"] .secondary-btn:hover {
+            background: rgba(0, 0, 0, 0.08);
+        }
+
+        [data-theme="light"] .notification-bell {
+            background: rgba(0, 0, 0, 0.04);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -549,6 +606,434 @@
             100% { transform: scale(1.5); opacity: 0; }
         }
 
+        /* Theme Toggle */
+        .theme-toggle {
+            padding: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .theme-toggle:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        [data-theme="light"] .theme-toggle {
+            background: rgba(0, 0, 0, 0.04);
+        }
+
+        [data-theme="light"] .theme-toggle:hover {
+            background: rgba(0, 0, 0, 0.08);
+        }
+
+        .theme-toggle .icon-sun,
+        [data-theme="dark"] .theme-toggle .icon-moon,
+        [data-theme="light"] .theme-toggle .icon-moon {
+            display: none;
+        }
+
+        [data-theme="dark"] .theme-toggle .icon-sun,
+        [data-theme="light"] .theme-toggle .icon-sun {
+            display: block;
+        }
+
+        /* Mobile Hamburger */
+        .mobile-menu-btn {
+            display: none;
+            padding: 8px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            cursor: pointer;
+            border: none;
+            color: var(--light);
+        }
+
+        /* Sidebar Overlay */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 49;
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+        }
+
+        /* Notification Dropdown */
+        .notification-wrapper {
+            position: relative;
+        }
+
+        .notification-dropdown {
+            position: absolute;
+            top: calc(100% + 12px);
+            right: 0;
+            width: 320px;
+            background: var(--dark);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.3);
+            z-index: 200;
+            display: none;
+            overflow: hidden;
+        }
+
+        .notification-dropdown.active {
+            display: block;
+        }
+
+        [data-theme="light"] .notification-dropdown {
+            background: #fff;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.12);
+        }
+
+        .notification-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        [data-theme="light"] .notification-header {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        .notification-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .notif-item {
+            padding: 14px 20px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+
+        .notif-item:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        [data-theme="light"] .notif-item:hover {
+            background: rgba(0, 0, 0, 0.02);
+        }
+
+        .notif-item.unread {
+            background: rgba(0, 102, 255, 0.05);
+        }
+
+        .notif-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--primary);
+            margin-top: 6px;
+            flex-shrink: 0;
+        }
+
+        .notif-item:not(.unread) .notif-dot {
+            background: transparent;
+        }
+
+        .notif-content {
+            flex: 1;
+        }
+
+        .notif-text {
+            font-size: 0.85rem;
+            margin-bottom: 4px;
+            line-height: 1.4;
+        }
+
+        .notif-time {
+            font-size: 0.75rem;
+            color: var(--gray-dark);
+        }
+
+        /* AI Chat Panel */
+        .ai-chat-panel {
+            position: fixed;
+            bottom: 6rem;
+            right: 2rem;
+            width: 380px;
+            max-height: 520px;
+            background: var(--dark);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            box-shadow: 0 16px 64px rgba(0, 0, 0, 0.4);
+            z-index: 99;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .ai-chat-panel.active {
+            display: flex;
+        }
+
+        [data-theme="light"] .ai-chat-panel {
+            background: #fff;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            box-shadow: 0 16px 64px rgba(0, 0, 0, 0.15);
+        }
+
+        .ai-chat-header {
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        [data-theme="light"] .ai-chat-header {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        .ai-chat-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 500;
+        }
+
+        .ai-chat-title .ai-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--success);
+        }
+
+        .ai-chat-close {
+            padding: 4px;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: background 0.15s ease;
+        }
+
+        .ai-chat-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .ai-chat-messages {
+            flex: 1;
+            padding: 16px 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-height: 280px;
+        }
+
+        .chat-msg {
+            max-width: 85%;
+            padding: 10px 14px;
+            border-radius: 14px;
+            font-size: 0.88rem;
+            line-height: 1.45;
+        }
+
+        .chat-msg.bot {
+            align-self: flex-start;
+            background: rgba(123, 45, 255, 0.1);
+            border-bottom-left-radius: 4px;
+        }
+
+        .chat-msg.user {
+            align-self: flex-end;
+            background: var(--primary);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .ai-chat-input {
+            padding: 12px 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            gap: 8px;
+        }
+
+        [data-theme="light"] .ai-chat-input {
+            border-top: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        .ai-chat-input input {
+            flex: 1;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--light);
+            font-family: inherit;
+            font-size: 0.88rem;
+            outline: none;
+            transition: border 0.2s ease;
+        }
+
+        .ai-chat-input input:focus {
+            border-color: var(--primary);
+        }
+
+        [data-theme="light"] .ai-chat-input input {
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            background: rgba(0, 0, 0, 0.02);
+        }
+
+        .ai-chat-input button {
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: none;
+            background: linear-gradient(135deg, var(--accent), var(--primary));
+            color: white;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 500;
+            transition: transform 0.15s ease;
+        }
+
+        .ai-chat-input button:hover {
+            transform: scale(1.05);
+        }
+
+        /* Spending Chart SVG */
+        .chart-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .chart-legend {
+            display: flex;
+            gap: 20px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            color: var(--gray-dark);
+        }
+
+        .legend-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .chart-svg-wrapper {
+            width: 100%;
+            height: calc(100% - 60px);
+        }
+
+        .chart-svg-wrapper svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .chart-grid-line {
+            stroke: rgba(255, 255, 255, 0.05);
+            stroke-width: 1;
+        }
+
+        [data-theme="light"] .chart-grid-line {
+            stroke: rgba(0, 0, 0, 0.06);
+        }
+
+        .chart-label {
+            fill: var(--gray-dark);
+            font-size: 11px;
+            font-family: 'IBM Plex Mono', monospace;
+        }
+
+        .chart-area-income {
+            fill: url(#incomeGradient);
+        }
+
+        .chart-area-spending {
+            fill: url(#spendingGradient);
+        }
+
+        .chart-line-income {
+            fill: none;
+            stroke: var(--primary);
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .chart-line-spending {
+            fill: none;
+            stroke: var(--accent);
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .chart-dot {
+            r: 4;
+            stroke-width: 2;
+            stroke: var(--dark);
+            cursor: pointer;
+            transition: r 0.15s ease;
+        }
+
+        .chart-dot:hover {
+            r: 6;
+        }
+
+        .chart-tooltip {
+            position: absolute;
+            padding: 8px 12px;
+            background: var(--dark);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-family: 'IBM Plex Mono', monospace;
+            pointer-events: none;
+            display: none;
+            z-index: 10;
+            white-space: nowrap;
+        }
+
+        [data-theme="light"] .chart-tooltip {
+            background: #fff;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Nav active indicator animation */
+        .nav-item {
+            position: relative;
+        }
+
+        .nav-item.active::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 60%;
+            background: var(--primary);
+            border-radius: 0 3px 3px 0;
+        }
+
         /* Responsive Design */
         @media (max-width: 1200px) {
             .app-container {
@@ -556,7 +1041,26 @@
             }
 
             .sidebar {
-                display: none;
+                position: fixed;
+                left: -280px;
+                top: 0;
+                height: 100vh;
+                width: 280px;
+                background: var(--dark);
+                z-index: 50;
+                transition: left 0.3s ease;
+            }
+
+            .sidebar.open {
+                left: 0;
+            }
+
+            [data-theme="light"] .sidebar {
+                background: #fff;
+            }
+
+            .mobile-menu-btn {
+                display: flex;
             }
 
             .account-summary, .quick-actions, .recent-transactions, .financial-insights, .spending-chart {
@@ -569,12 +1073,34 @@
                 padding: 1.5rem;
             }
 
+            .header {
+                flex-direction: column;
+                gap: 16px;
+                align-items: flex-start;
+            }
+
             .account-actions {
                 flex-direction: column;
             }
 
             .action-grid {
-                grid-template-columns: 1fr;
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .ai-chat-panel {
+                right: 1rem;
+                left: 1rem;
+                width: auto;
+                bottom: 5rem;
+            }
+
+            .notification-dropdown {
+                right: -60px;
+                width: 290px;
+            }
+
+            .spending-chart {
+                height: 320px;
             }
         }
     </style>
@@ -655,12 +1181,63 @@
                 </div>
 
                 <div class="user-controls">
-                    <div class="notification-bell">
-                        <div class="notification-badge"></div>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M18 8C18 6.4087 17.3679 4.88258 16.2426 3.75736C15.1174 2.63214 13.5913 2 12 2C10.4087 2 8.88258 2.63214 7.75736 3.75736C6.63214 4.88258 6 6.4087 6 8C6 15 3 17 3 17H21C21 17 18 15 18 8Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            <path d="M13.73 21C13.5542 21.3031 13.3019 21.5547 12.9982 21.7295C12.6946 21.9044 12.3504 21.9965 12 21.9965C11.6496 21.9965 11.3054 21.9044 11.0018 21.7295C10.6982 21.5547 10.4458 21.3031 10.27 21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Open menu">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3 12H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M3 6H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M3 18H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
+                    </button>
+                    <div class="theme-toggle" id="themeToggle" title="Toggle theme">
+                        <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="2"/>
+                            <path d="M12 1V3M12 21V23M4.22 4.22L5.64 5.64M18.36 18.36L19.78 19.78M1 12H3M21 12H23M4.22 19.78L5.64 18.36M18.36 5.64L19.78 4.22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <div class="notification-wrapper">
+                        <div class="notification-bell" id="notifBell">
+                            <div class="notification-badge"></div>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M18 8C18 6.4087 17.3679 4.88258 16.2426 3.75736C15.1174 2.63214 13.5913 2 12 2C10.4087 2 8.88258 2.63214 7.75736 3.75736C6.63214 4.88258 6 6.4087 6 8C6 15 3 17 3 17H21C21 17 18 15 18 8Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M13.73 21C13.5542 21.3031 13.3019 21.5547 12.9982 21.7295C12.6946 21.9044 12.3504 21.9965 12 21.9965C11.6496 21.9965 11.3054 21.9044 11.0018 21.7295C10.6982 21.5547 10.4458 21.3031 10.27 21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <div class="notification-dropdown" id="notifDropdown">
+                            <div class="notification-header">Notifications</div>
+                            <div class="notification-list">
+                                <div class="notif-item unread">
+                                    <div class="notif-dot"></div>
+                                    <div class="notif-content">
+                                        <div class="notif-text">Your salary of <strong>$3,850.00</strong> has been deposited.</div>
+                                        <div class="notif-time">2 hours ago</div>
+                                    </div>
+                                </div>
+                                <div class="notif-item unread">
+                                    <div class="notif-dot"></div>
+                                    <div class="notif-content">
+                                        <div class="notif-text">Spending alert: Dining expenses are 15% above budget this month.</div>
+                                        <div class="notif-time">5 hours ago</div>
+                                    </div>
+                                </div>
+                                <div class="notif-item">
+                                    <div class="notif-dot"></div>
+                                    <div class="notif-content">
+                                        <div class="notif-text">Your scheduled transfer of $500 to Savings was completed.</div>
+                                        <div class="notif-time">Yesterday</div>
+                                    </div>
+                                </div>
+                                <div class="notif-item">
+                                    <div class="notif-dot"></div>
+                                    <div class="notif-content">
+                                        <div class="notif-text">New feature: AI-powered spending insights are now available.</div>
+                                        <div class="notif-time">2 days ago</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="user-avatar">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -827,67 +1404,116 @@
 
                 <!-- Spending Chart -->
                 <div class="holographic-card spending-chart">
-                    <div class="chart-placeholder">
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M3 3V19H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            <path d="M3 9L8 6L12 9L21 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                        Monthly Spending Trends
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3 class="section-title">Monthly Trends</h3>
+                            <div class="chart-legend">
+                                <div class="legend-item">
+                                    <div class="legend-dot" style="background: var(--primary);"></div>
+                                    Income
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-dot" style="background: var(--accent);"></div>
+                                    Spending
+                                </div>
+                            </div>
+                        </div>
+                        <div class="chart-svg-wrapper">
+                            <svg id="spendingChart" viewBox="0 0 700 260" preserveAspectRatio="xMidYMid meet">
+                                <defs>
+                                    <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stop-color="var(--primary)" stop-opacity="0.25"/>
+                                        <stop offset="100%" stop-color="var(--primary)" stop-opacity="0"/>
+                                    </linearGradient>
+                                    <linearGradient id="spendingGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.2"/>
+                                        <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
+                                    </linearGradient>
+                                </defs>
+                                <!-- Grid lines -->
+                                <line class="chart-grid-line" x1="60" y1="20" x2="680" y2="20"/>
+                                <line class="chart-grid-line" x1="60" y1="68" x2="680" y2="68"/>
+                                <line class="chart-grid-line" x1="60" y1="116" x2="680" y2="116"/>
+                                <line class="chart-grid-line" x1="60" y1="164" x2="680" y2="164"/>
+                                <line class="chart-grid-line" x1="60" y1="212" x2="680" y2="212"/>
+                                <!-- Y-axis labels -->
+                                <text class="chart-label" x="50" y="24" text-anchor="end">$5k</text>
+                                <text class="chart-label" x="50" y="72" text-anchor="end">$4k</text>
+                                <text class="chart-label" x="50" y="120" text-anchor="end">$3k</text>
+                                <text class="chart-label" x="50" y="168" text-anchor="end">$2k</text>
+                                <text class="chart-label" x="50" y="216" text-anchor="end">$1k</text>
+                                <!-- X-axis labels -->
+                                <text class="chart-label" x="94" y="240" text-anchor="middle">Jul</text>
+                                <text class="chart-label" x="191" y="240" text-anchor="middle">Aug</text>
+                                <text class="chart-label" x="289" y="240" text-anchor="middle">Sep</text>
+                                <text class="chart-label" x="386" y="240" text-anchor="middle">Oct</text>
+                                <text class="chart-label" x="483" y="240" text-anchor="middle">Nov</text>
+                                <text class="chart-label" x="580" y="240" text-anchor="middle">Dec</text>
+                                <!-- Income area -->
+                                <path class="chart-area-income" d="M94,100 L191,76 L289,88 L386,52 L483,64 L580,40 L580,212 L94,212 Z"/>
+                                <!-- Spending area -->
+                                <path class="chart-area-spending" d="M94,140 L191,128 L289,152 L386,116 L483,136 L580,104 L580,212 L94,212 Z"/>
+                                <!-- Income line -->
+                                <polyline class="chart-line-income" points="94,100 191,76 289,88 386,52 483,64 580,40"/>
+                                <!-- Spending line -->
+                                <polyline class="chart-line-spending" points="94,140 191,128 289,152 386,116 483,136 580,104"/>
+                                <!-- Income dots -->
+                                <circle class="chart-dot" cx="94" cy="100" fill="var(--primary)" data-label="Jul" data-value="$3,320"/>
+                                <circle class="chart-dot" cx="191" cy="76" fill="var(--primary)" data-label="Aug" data-value="$3,640"/>
+                                <circle class="chart-dot" cx="289" cy="88" fill="var(--primary)" data-label="Sep" data-value="$3,480"/>
+                                <circle class="chart-dot" cx="386" cy="52" fill="var(--primary)" data-label="Oct" data-value="$3,950"/>
+                                <circle class="chart-dot" cx="483" cy="64" fill="var(--primary)" data-label="Nov" data-value="$3,790"/>
+                                <circle class="chart-dot" cx="580" cy="40" fill="var(--primary)" data-label="Dec" data-value="$4,120"/>
+                                <!-- Spending dots -->
+                                <circle class="chart-dot" cx="94" cy="140" fill="var(--accent)" data-label="Jul" data-value="$2,280"/>
+                                <circle class="chart-dot" cx="191" cy="128" fill="var(--accent)" data-label="Aug" data-value="$2,440"/>
+                                <circle class="chart-dot" cx="289" cy="152" fill="var(--accent)" data-label="Sep" data-value="$2,120"/>
+                                <circle class="chart-dot" cx="386" cy="116" fill="var(--accent)" data-label="Oct" data-value="$2,590"/>
+                                <circle class="chart-dot" cx="483" cy="136" fill="var(--accent)" data-label="Nov" data-value="$2,330"/>
+                                <circle class="chart-dot" cx="580" cy="104" fill="var(--accent)" data-label="Dec" data-value="$2,750"/>
+                            </svg>
+                        </div>
+                        <div class="chart-tooltip" id="chartTooltip"></div>
                     </div>
                 </div>
             </div>
         </main>
     </div>
 
+    <!-- Sidebar Overlay (mobile) -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- AI Chat Panel -->
+    <div class="ai-chat-panel" id="aiChatPanel">
+        <div class="ai-chat-header">
+            <div class="ai-chat-title">
+                <div class="ai-dot"></div>
+                Nexus AI
+            </div>
+            <div class="ai-chat-close" id="aiChatClose">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+        </div>
+        <div class="ai-chat-messages" id="aiChatMessages">
+            <div class="chat-msg bot">Hi Alex! I'm your Nexus AI assistant. I can help you track spending, set budgets, and find savings opportunities. What would you like to know?</div>
+        </div>
+        <div class="ai-chat-input">
+            <input type="text" id="aiChatInput" placeholder="Ask about your finances..." autocomplete="off"/>
+            <button id="aiChatSend">Send</button>
+        </div>
+    </div>
+
     <!-- AI Assistant Floating Button -->
-    <div class="ai-assistant">
+    <div class="ai-assistant" id="aiAssistantBtn">
         <div class="ai-pulse"></div>
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 18C15.3137 18 18 15.3137 18 12C18 8.68629 15.3137 6 12 6C8.68629 6 6 8.68629 6 12C6 15.3137 8.68629 18 12 18Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M19.07 4.92999L4.92999 19.07" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M21 15C21 15.5304 20.7893 16.0391 20.4142 16.4142C20.0391 16.7893 19.5304 17 19 17H7L3 21V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V15Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
     </div>
 
-    <script>
-        // Theme switcher (would be more sophisticated in production)
-        const themes = ['adaptive', 'dark', 'light'];
-        let currentTheme = 0;
-        
-        document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.key === 't') {
-                currentTheme = (currentTheme + 1) % themes.length;
-                document.documentElement.setAttribute('data-theme', themes[currentTheme]);
-            }
-        });
-
-        // Simulate dynamic balance update
-        setInterval(() => {
-            const balanceElement = document.querySelector('.account-balance');
-            if (balanceElement) {
-                const currentBalance = parseFloat(balanceElement.textContent.replace(/[^0-9.-]/g, ''));
-                const fluctuation = (Math.random() * 2 - 1) * 0.5; // Small random fluctuation
-                const newBalance = currentBalance + fluctuation;
-                balanceElement.textContent = '$' + newBalance.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-            }
-        }, 30000); // Update every 30 seconds
-
-        // AI Assistant interaction
-        const aiAssistant = document.querySelector('.ai-assistant');
-        if (aiAssistant) {
-            aiAssistant.addEventListener('click', () => {
-                alert('Nexus AI: How can I assist you with your finances today?');
-            });
-        }
-
-        // Simulate real-time notifications
-        setTimeout(() => {
-            const notificationBadge = document.querySelector('.notification-badge');
-            if (notificationBadge) {
-                notificationBadge.style.display = 'block';
-            }
-        }, 5000);
-    </script>
     <script src="script.js"></script>
 </body> 
 </html>
