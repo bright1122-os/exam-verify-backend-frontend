@@ -329,3 +329,118 @@ export const updateUserRole = async (req, res) => {
     errorResponse(res, 'Failed to update user role');
   }
 };
+
+// @desc    Export students as CSV
+// @route   GET /api/v1/admin/export/students
+// @access  Private (Admin)
+export const exportStudentsCSV = async (req, res) => {
+  try {
+    const students = await Student.find()
+      .populate('userId', 'name email')
+      .sort({ createdAt: -1 });
+
+    const header = 'Name,Email,Matric Number,Department,Faculty,Level,Payment Verified,QR Generated,Registered At\n';
+    const rows = students.map(s => {
+      const name = (s.userId?.name || 'N/A').replace(/,/g, ' ');
+      const email = s.userId?.email || 'N/A';
+      const matric = s.matricNumber || '';
+      const dept = (s.department || '').replace(/,/g, ' ');
+      const faculty = (s.faculty || '').replace(/,/g, ' ');
+      const level = s.level || '';
+      const paid = s.paymentVerified ? 'Yes' : 'No';
+      const qr = s.qrCodeGenerated ? 'Yes' : 'No';
+      const date = s.createdAt ? new Date(s.createdAt).toISOString().split('T')[0] : '';
+      return `${name},${email},${matric},${dept},${faculty},${level},${paid},${qr},${date}`;
+    }).join('\n');
+
+    const csv = header + rows;
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename=examverify-students-${new Date().toISOString().split('T')[0]}.csv`);
+
+    logger.info(`Admin ${req.user.email} exported students CSV (${students.length} records)`);
+    return res.send(csv);
+
+  } catch (error) {
+    logger.error('Export students CSV error:', error);
+    errorResponse(res, 'Failed to export students');
+  }
+};
+
+// @desc    Export verifications as CSV
+// @route   GET /api/v1/admin/export/verifications
+// @access  Private (Admin)
+export const exportVerificationsCSV = async (req, res) => {
+  try {
+    const verifications = await Verification.find()
+      .populate({
+        path: 'studentId',
+        populate: { path: 'userId', select: 'name email' }
+      })
+      .populate('examinerId', 'name email')
+      .sort({ verifiedAt: -1 });
+
+    const header = 'Student Name,Matric Number,Examiner,Status,Exam Hall,Denial Reason,Notes,Verified At\n';
+    const rows = verifications.map(v => {
+      const studentName = (v.studentId?.userId?.name || 'N/A').replace(/,/g, ' ');
+      const matric = v.studentId?.matricNumber || '';
+      const examiner = (v.examinerId?.name || 'N/A').replace(/,/g, ' ');
+      const status = v.status || '';
+      const hall = (v.examHall || '').replace(/,/g, ' ');
+      const reason = (v.denialReason || '').replace(/,/g, ' ');
+      const notes = (v.notes || '').replace(/,/g, ' ').replace(/\n/g, ' ');
+      const date = v.verifiedAt ? new Date(v.verifiedAt).toISOString() : '';
+      return `${studentName},${matric},${examiner},${status},${hall},${reason},${notes},${date}`;
+    }).join('\n');
+
+    const csv = header + rows;
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename=examverify-verifications-${new Date().toISOString().split('T')[0]}.csv`);
+
+    logger.info(`Admin ${req.user.email} exported verifications CSV (${verifications.length} records)`);
+    return res.send(csv);
+
+  } catch (error) {
+    logger.error('Export verifications CSV error:', error);
+    errorResponse(res, 'Failed to export verifications');
+  }
+};
+
+// @desc    Export payments as CSV
+// @route   GET /api/v1/admin/export/payments
+// @access  Private (Admin)
+export const exportPaymentsCSV = async (req, res) => {
+  try {
+    const payments = await Payment.find()
+      .populate({
+        path: 'studentId',
+        populate: { path: 'userId', select: 'name email' }
+      })
+      .sort({ createdAt: -1 });
+
+    const header = 'Student Name,Email,Order ID,RRR,Amount,Status,Transaction Date\n';
+    const rows = payments.map(p => {
+      const name = (p.studentId?.userId?.name || 'N/A').replace(/,/g, ' ');
+      const email = p.studentId?.userId?.email || 'N/A';
+      const orderId = p.orderId || '';
+      const rrr = p.rrr || '';
+      const amount = p.amount || 0;
+      const status = p.status || '';
+      const date = p.transactionDate ? new Date(p.transactionDate).toISOString().split('T')[0] : '';
+      return `${name},${email},${orderId},${rrr},${amount},${status},${date}`;
+    }).join('\n');
+
+    const csv = header + rows;
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename=examverify-payments-${new Date().toISOString().split('T')[0]}.csv`);
+
+    logger.info(`Admin ${req.user.email} exported payments CSV (${payments.length} records)`);
+    return res.send(csv);
+
+  } catch (error) {
+    logger.error('Export payments CSV error:', error);
+    errorResponse(res, 'Failed to export payments');
+  }
+};

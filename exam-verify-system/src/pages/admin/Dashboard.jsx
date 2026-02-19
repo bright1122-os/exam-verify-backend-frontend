@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { format } from 'date-fns';
+import { format, subDays, startOfDay } from 'date-fns';
 import {
   Users,
   CheckCircle,
@@ -9,13 +9,144 @@ import {
   Search,
   BarChart3,
   TrendingUp,
-  Shield
+  Shield,
+  Download,
 } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 import { PageTransition } from '../../components/layout/PageTransition';
 import { Badge } from '../../components/ui/Badge';
-import { useStore } from '../../store/useStore';
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 
-// Mock data for admin dashboard
+// Simple SVG Bar Chart component
+const BarChart = ({ data, height = 180 }) => {
+  if (!data || data.length === 0) return null;
+  const maxValue = Math.max(...data.map(d => d.value), 1);
+  const barWidth = Math.min(40, (100 / data.length) * 0.6);
+  const gap = (100 - barWidth * data.length) / (data.length + 1);
+
+  return (
+    <svg viewBox={`0 0 400 ${height}`} className="w-full" style={{ height }}>
+      {/* Grid lines */}
+      {[0, 0.25, 0.5, 0.75, 1].map((ratio) => (
+        <g key={ratio}>
+          <line
+            x1="40" y1={height - 30 - (height - 50) * ratio}
+            x2="395" y2={height - 30 - (height - 50) * ratio}
+            stroke="#e5e7eb" strokeWidth="0.5" strokeDasharray="4,4"
+          />
+          <text
+            x="35" y={height - 26 - (height - 50) * ratio}
+            textAnchor="end" fontSize="9" fill="#9ca3af"
+          >
+            {Math.round(maxValue * ratio)}
+          </text>
+        </g>
+      ))}
+      {/* Bars */}
+      {data.map((item, index) => {
+        const barH = (item.value / maxValue) * (height - 50);
+        const x = 45 + index * ((350) / data.length) + ((350 / data.length) - barWidth * 3.5) / 2;
+        return (
+          <g key={index}>
+            <motion.rect
+              initial={{ height: 0, y: height - 30 }}
+              animate={{ height: barH, y: height - 30 - barH }}
+              transition={{ delay: index * 0.05, duration: 0.5, ease: 'easeOut' }}
+              x={x}
+              width={barWidth * 3.5}
+              rx="4"
+              fill="url(#barGradient)"
+              opacity="0.9"
+            />
+            <text
+              x={x + (barWidth * 3.5) / 2}
+              y={height - 15}
+              textAnchor="middle"
+              fontSize="8"
+              fill="#6b7280"
+              fontFamily="system-ui"
+            >
+              {item.label}
+            </text>
+            {item.value > 0 && (
+              <motion.text
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: index * 0.05 + 0.5 }}
+                x={x + (barWidth * 3.5) / 2}
+                y={height - 34 - barH}
+                textAnchor="middle"
+                fontSize="9"
+                fontWeight="600"
+                fill="#374151"
+              >
+                {item.value}
+              </motion.text>
+            )}
+          </g>
+        );
+      })}
+      <defs>
+        <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#3B82F6" />
+          <stop offset="100%" stopColor="#1E40AF" />
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+};
+
+// Donut chart component
+const DonutChart = ({ segments, size = 140 }) => {
+  const total = segments.reduce((sum, s) => sum + s.value, 0) || 1;
+  const radius = 50;
+  const circumference = 2 * Math.PI * radius;
+  let offset = 0;
+
+  return (
+    <div className="flex items-center gap-6">
+      <svg width={size} height={size} viewBox="0 0 120 120">
+        {segments.map((segment, i) => {
+          const ratio = segment.value / total;
+          const dashLength = ratio * circumference;
+          const currentOffset = offset;
+          offset += dashLength;
+          return (
+            <motion.circle
+              key={i}
+              cx="60" cy="60" r={radius}
+              fill="none"
+              stroke={segment.color}
+              strokeWidth="18"
+              strokeDasharray={`${dashLength} ${circumference - dashLength}`}
+              strokeDashoffset={-currentOffset}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: i * 0.2, duration: 0.5 }}
+              transform="rotate(-90 60 60)"
+            />
+          );
+        })}
+        <text x="60" y="56" textAnchor="middle" fontSize="18" fontWeight="700" fill="#141413">
+          {total}
+        </text>
+        <text x="60" y="70" textAnchor="middle" fontSize="8" fill="#9ca3af">
+          Total
+        </text>
+      </svg>
+      <div className="space-y-2">
+        {segments.map((s, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: s.color }} />
+            <span className="text-xs text-stone font-heading">{s.label}: <strong className="text-anthracite">{s.value}</strong></span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// Mock data fallback
 const mockStudents = [
   { id: 'STU-001', name: 'John Doe', matricNumber: 'CSC/2020/001', department: 'Computer Science', level: '400', course: 'CSC 401', paymentVerified: true, qrGenerated: true, registeredAt: '2025-01-15T10:30:00Z' },
   { id: 'STU-002', name: 'Jane Smith', matricNumber: 'CSC/2020/002', department: 'Computer Science', level: '400', course: 'CSC 401', paymentVerified: true, qrGenerated: true, registeredAt: '2025-01-15T11:00:00Z' },
@@ -30,19 +161,82 @@ const mockStudents = [
 const AdminDashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-  const { registeredStudents } = useStore();
+  const [students, setStudents] = useState(mockStudents);
+  const [loading, setLoading] = useState(true);
+  const [registrationTrend, setRegistrationTrend] = useState([]);
 
-  const allStudents = [...mockStudents, ...registeredStudents];
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Attempt to fetch from Supabase
+        const { data: supaStudents, error } = await supabase
+          .from('students')
+          .select(`
+            id,
+            matric_number,
+            department,
+            faculty,
+            level,
+            payment_verified,
+            qr_generated,
+            registration_complete,
+            created_at,
+            profiles:user_id (name, email)
+          `)
+          .order('created_at', { ascending: false });
+
+        if (!error && supaStudents && supaStudents.length > 0) {
+          const mapped = supaStudents.map((s) => ({
+            id: s.id,
+            name: s.profiles?.name || 'N/A',
+            matricNumber: s.matric_number,
+            department: s.department,
+            level: s.level,
+            course: `${s.department?.substring(0, 3).toUpperCase() || 'GEN'} ${s.level}01`,
+            paymentVerified: s.payment_verified,
+            qrGenerated: s.qr_generated,
+            registeredAt: s.created_at,
+          }));
+          setStudents(mapped);
+        }
+        // If Supabase fails or returns empty, keep mock data
+
+        // Build registration trend (last 7 days)
+        const trend = [];
+        const allData = students.length > 0 ? students : mockStudents;
+        for (let i = 6; i >= 0; i--) {
+          const day = startOfDay(subDays(new Date(), i));
+          const nextDay = startOfDay(subDays(new Date(), i - 1));
+          const count = allData.filter(s => {
+            if (!s.registeredAt) return false;
+            const d = new Date(s.registeredAt);
+            return d >= day && d < nextDay;
+          }).length;
+          trend.push({
+            label: format(day, 'EEE'),
+            value: count,
+          });
+        }
+        setRegistrationTrend(trend);
+      } catch (error) {
+        console.error('Admin dashboard fetch error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const stats = useMemo(() => ({
-    total: allStudents.length,
-    verified: allStudents.filter(s => s.paymentVerified).length,
-    pending: allStudents.filter(s => !s.paymentVerified).length,
-    qrGenerated: allStudents.filter(s => s.qrGenerated).length,
-  }), [allStudents]);
+    total: students.length,
+    verified: students.filter(s => s.paymentVerified).length,
+    pending: students.filter(s => !s.paymentVerified).length,
+    qrGenerated: students.filter(s => s.qrGenerated).length,
+  }), [students]);
 
   const filteredStudents = useMemo(() => {
-    return allStudents.filter(student => {
+    return students.filter(student => {
       const matchesSearch =
         student.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         student.matricNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -56,7 +250,28 @@ const AdminDashboard = () => {
 
       return matchesSearch && matchesFilter;
     });
-  }, [allStudents, searchTerm, filterStatus]);
+  }, [students, searchTerm, filterStatus]);
+
+  const handleExportCSV = () => {
+    const headers = ['Name', 'Matric Number', 'Department', 'Level', 'Payment', 'QR Code', 'Date'];
+    const rows = filteredStudents.map(s => [
+      s.name,
+      s.matricNumber,
+      s.department,
+      s.level,
+      s.paymentVerified ? 'Verified' : 'Pending',
+      s.qrGenerated ? 'Generated' : 'Not Yet',
+      s.registeredAt ? format(new Date(s.registeredAt), 'yyyy-MM-dd') : 'N/A',
+    ]);
+    const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `examverify-students-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const statCards = [
     { label: 'Total Students', value: stats.total, icon: Users, color: 'text-terracotta', bg: 'bg-terracotta/10' },
@@ -64,6 +279,14 @@ const AdminDashboard = () => {
     { label: 'Pending Payment', value: stats.pending, icon: Clock, color: 'text-warning', bg: 'bg-warning/10' },
     { label: 'QR Generated', value: stats.qrGenerated, icon: QrCode, color: 'text-anthracite', bg: 'bg-stone/20' },
   ];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-parchment">
+        <LoadingSpinner size="lg" text="Loading admin dashboard..." />
+      </div>
+    );
+  }
 
   return (
     <PageTransition>
@@ -73,14 +296,23 @@ const AdminDashboard = () => {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-8 border-b border-sand pb-6"
+            className="mb-8 border-b border-sand pb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
           >
-            <h1 className="text-3xl font-heading font-bold text-anthracite mb-2">
-              Admin Dashboard
-            </h1>
-            <p className="text-stone font-body">
-              Overview of student registrations and verifications
-            </p>
+            <div>
+              <h1 className="text-3xl font-heading font-bold text-anthracite mb-2">
+                Admin Dashboard
+              </h1>
+              <p className="text-stone font-body">
+                Overview of student registrations and verifications
+              </p>
+            </div>
+            <button
+              onClick={handleExportCSV}
+              className="flex items-center gap-2 px-5 py-2.5 bg-anthracite text-parchment text-sm font-bold rounded-xl hover:bg-anthracite/90 transition-all self-start"
+            >
+              <Download className="w-4 h-4" />
+              Export CSV
+            </button>
           </motion.div>
 
           {/* Stats Cards */}
@@ -114,7 +346,7 @@ const AdminDashboard = () => {
             })}
           </div>
 
-          {/* Charts Placeholder */}
+          {/* Charts */}
           <div className="grid lg:grid-cols-2 gap-6 mb-8">
             <motion.div
               initial={{ opacity: 0, y: 10 }}
@@ -124,15 +356,9 @@ const AdminDashboard = () => {
               <div className="card">
                 <div className="flex items-center gap-2 mb-6">
                   <BarChart3 className="w-5 h-5 text-terracotta" />
-                  <h3 className="font-heading font-semibold text-anthracite">Registration Trend</h3>
+                  <h3 className="font-heading font-semibold text-anthracite">Registration Trend (Last 7 Days)</h3>
                 </div>
-                <div className="h-48 flex items-center justify-center bg-sand/10 rounded-lg border border-sand border-dashed">
-                  <div className="text-center">
-                    <TrendingUp className="w-10 h-10 text-stone/50 mx-auto mb-2" />
-                    <p className="text-sm text-stone font-body">Chart visualization placeholder</p>
-                    <p className="text-xs text-stone/60 font-heading mt-1">Registrations over time</p>
-                  </div>
-                </div>
+                <BarChart data={registrationTrend} height={200} />
               </div>
             </motion.div>
 
@@ -146,55 +372,47 @@ const AdminDashboard = () => {
                   <Shield className="w-5 h-5 text-terracotta" />
                   <h3 className="font-heading font-semibold text-anthracite">Verification Status</h3>
                 </div>
-                <div className="h-48 flex items-center justify-center">
-                  <div className="space-y-6 w-full">
-                    <div>
-                      <div className="flex justify-between text-sm mb-2 font-heading">
-                        <span className="text-stone">Payment Verified</span>
-                        <span className="font-medium text-anthracite">
-                          {stats.total > 0 ? Math.round((stats.verified / stats.total) * 100) : 0}%
-                        </span>
-                      </div>
-                      <div className="w-full h-2 bg-sand/30 rounded-full overflow-hidden">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${stats.total > 0 ? (stats.verified / stats.total) * 100 : 0}%` }}
-                          transition={{ delay: 0.6, duration: 1 }}
-                          className="h-full bg-sage rounded-full"
-                        />
-                      </div>
+                <div className="flex items-center justify-center py-4">
+                  <DonutChart
+                    segments={[
+                      { label: 'Verified & QR', value: students.filter(s => s.paymentVerified && s.qrGenerated).length, color: '#10B981' },
+                      { label: 'Verified Only', value: students.filter(s => s.paymentVerified && !s.qrGenerated).length, color: '#3B82F6' },
+                      { label: 'Pending', value: stats.pending, color: '#F59E0B' },
+                    ]}
+                  />
+                </div>
+                {/* Progress bars */}
+                <div className="space-y-4 mt-4 pt-4 border-t border-sand">
+                  <div>
+                    <div className="flex justify-between text-sm mb-2 font-heading">
+                      <span className="text-stone">Payment Verified</span>
+                      <span className="font-medium text-anthracite">
+                        {stats.total > 0 ? Math.round((stats.verified / stats.total) * 100) : 0}%
+                      </span>
                     </div>
-                    <div>
-                      <div className="flex justify-between text-sm mb-2 font-heading">
-                        <span className="text-stone">QR Generated</span>
-                        <span className="font-medium text-anthracite">
-                          {stats.total > 0 ? Math.round((stats.qrGenerated / stats.total) * 100) : 0}%
-                        </span>
-                      </div>
-                      <div className="w-full h-2 bg-sand/30 rounded-full overflow-hidden">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${stats.total > 0 ? (stats.qrGenerated / stats.total) * 100 : 0}%` }}
-                          transition={{ delay: 0.8, duration: 1 }}
-                          className="h-full bg-anthracite rounded-full"
-                        />
-                      </div>
+                    <div className="w-full h-2 bg-sand/30 rounded-full overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${stats.total > 0 ? (stats.verified / stats.total) * 100 : 0}%` }}
+                        transition={{ delay: 0.6, duration: 1 }}
+                        className="h-full bg-sage rounded-full"
+                      />
                     </div>
-                    <div>
-                      <div className="flex justify-between text-sm mb-2 font-heading">
-                        <span className="text-stone">Pending</span>
-                        <span className="font-medium text-anthracite">
-                          {stats.total > 0 ? Math.round((stats.pending / stats.total) * 100) : 0}%
-                        </span>
-                      </div>
-                      <div className="w-full h-2 bg-sand/30 rounded-full overflow-hidden">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${stats.total > 0 ? (stats.pending / stats.total) * 100 : 0}%` }}
-                          transition={{ delay: 1, duration: 1 }}
-                          className="h-full bg-warning rounded-full"
-                        />
-                      </div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-sm mb-2 font-heading">
+                      <span className="text-stone">QR Generated</span>
+                      <span className="font-medium text-anthracite">
+                        {stats.total > 0 ? Math.round((stats.qrGenerated / stats.total) * 100) : 0}%
+                      </span>
+                    </div>
+                    <div className="w-full h-2 bg-sand/30 rounded-full overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${stats.total > 0 ? (stats.qrGenerated / stats.total) * 100 : 0}%` }}
+                        transition={{ delay: 0.8, duration: 1 }}
+                        className="h-full bg-anthracite rounded-full"
+                      />
                     </div>
                   </div>
                 </div>
@@ -212,7 +430,7 @@ const AdminDashboard = () => {
               <div className="p-6 border-b border-sand bg-parchment">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <h3 className="text-lg font-heading font-semibold text-anthracite">
-                    Registered Students
+                    Registered Students ({filteredStudents.length})
                   </h3>
                   <div className="flex items-center gap-3 w-full sm:w-auto">
                     <div className="flex-1 sm:w-64 relative">

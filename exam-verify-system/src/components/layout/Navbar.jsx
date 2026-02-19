@@ -11,7 +11,9 @@ import {
   ScanLine,
   LayoutDashboard,
   ShieldCheck,
-  ChevronRight
+  ChevronRight,
+  Settings,
+  ClipboardCheck,
 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 
@@ -30,13 +32,17 @@ export const Navbar = () => {
     student: [
       { to: '/student/dashboard', label: 'Student Portal', icon: LayoutDashboard },
       { to: '/student/qr-code', label: 'My Exam Pass', icon: QrCode },
+      { to: '/student/verification', label: 'Status', icon: ClipboardCheck },
+      { to: '/settings', label: 'Settings', icon: Settings },
     ],
     examiner: [
       { to: '/examiner/dashboard', label: 'Examiner Dashboard', icon: LayoutDashboard },
       { to: '/examiner/scan', label: 'Scan Terminal', icon: ScanLine },
+      { to: '/settings', label: 'Settings', icon: Settings },
     ],
     admin: [
       { to: '/admin/dashboard', label: 'System Admin', icon: LayoutDashboard },
+      { to: '/settings', label: 'Settings', icon: Settings },
     ],
   };
 
