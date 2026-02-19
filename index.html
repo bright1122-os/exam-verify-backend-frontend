@@ -3,348 +3,267 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ExamVerify — Anthropic-style Product Concept</title>
+  <title>ExamVerify — Claude-style onboarding replica</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600&family=Poppins:wght@500;600&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --color-dark: #141413;
-      --color-light: #faf9f5;
-      --color-stone: #b0aea5;
-      --color-sand: #e8e6dc;
-      --color-terracotta: #d97757;
-      --color-sky: #6a9bcc;
-      --color-sage: #788c5d;
-      --color-error: #c45c4a;
-      --color-warning: #d4a03c;
-      --font-heading: 'Poppins', sans-serif;
-      --font-body: 'Lora', Georgia, serif;
-      --radius-sm: 6px;
-      --radius-md: 10px;
-      --radius-lg: 16px;
-      --shadow-sm: 0 1px 2px rgba(20, 20, 19, 0.06);
-      --shadow-md: 0 4px 12px rgba(20, 20, 19, 0.08);
-      --shadow-lg: 0 12px 32px rgba(20, 20, 19, 0.12);
+      --black: #000;
+      --cream: #f4efe7;
+      --terracotta: #cd7758;
+      --terracotta-deep: #b66548;
+      --white: #fff;
+      --dark: #141413;
+      --stone: #b0aea5;
+      --sky: #6a9bcc;
+      --sage: #788c5d;
     }
 
     * { box-sizing: border-box; }
 
     body {
       margin: 0;
-      background: var(--color-light);
-      color: var(--color-dark);
-      font-family: var(--font-body);
-      line-height: 1.6;
-    }
-
-    .topbar {
-      background: var(--color-dark);
-      height: 64px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
-
-    .topbar-inner {
-      width: min(1200px, calc(100% - 2rem));
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-    }
-
-    .logo {
-      width: 48px;
-      height: 48px;
-      border-radius: 10px;
-      background: var(--color-dark);
-      border: 1px solid rgba(250, 249, 245, 0.12);
-      color: var(--color-terracotta);
+      background: var(--black);
+      color: var(--white);
+      font-family: 'Lora', Georgia, serif;
+      min-height: 100vh;
       display: grid;
       place-items: center;
-      font: 700 20px/1 var(--font-heading);
+      padding: 24px 10px;
     }
 
-    .nav-links {
-      display: flex;
-      gap: 22px;
-      font-family: var(--font-heading);
-      font-size: 14px;
-      align-items: end;
-    }
-
-    .nav-links a {
-      color: var(--color-stone);
-      text-decoration: none;
-      padding-bottom: 4px;
-      border-bottom: 2px solid transparent;
-    }
-
-    .nav-links .active {
-      color: var(--color-terracotta);
-      border-bottom-color: var(--color-terracotta);
-    }
-
-    .avatar {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #d0cec4, #f5f4ee);
-      border: 1px solid #c8c5b8;
-    }
-
-    main {
-      width: min(1200px, calc(100% - 3rem));
-      margin: 32px auto 48px;
-      animation: enter .2s ease-out;
-    }
-
-    @keyframes enter {
-      from { opacity: 0; transform: translateY(6px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    h1, h2, h3 { font-family: var(--font-heading); margin: 0 0 8px; }
-    h1 { font-size: 32px; line-height: 1.2; font-weight: 600; }
-    h2 { font-size: 24px; line-height: 1.3; font-weight: 600; margin-top: 0; }
-    h3 { font-size: 18px; line-height: 1.4; font-weight: 500; }
-    p { margin: 0; }
-
-    .hero {
-      display: grid;
-      gap: 18px;
-      margin-bottom: 26px;
-    }
-
-    .badge-row {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .status-badge {
-      border-radius: 999px;
-      padding: 4px 12px;
-      font: 500 13px/1.3 var(--font-heading);
-    }
-
-    .approved { background: rgba(120, 140, 93, 0.12); color: var(--color-sage); }
-    .pending { background: rgba(212, 160, 60, 0.12); color: var(--color-warning); }
-    .denied { background: rgba(196, 92, 74, 0.12); color: var(--color-error); }
-
-    .stepper {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 4px;
-    }
-
-    .step {
-      width: 28px;
-      height: 28px;
-      border-radius: 999px;
-      border: 2px solid var(--color-sand);
-      display: grid;
-      place-items: center;
-      font-family: var(--font-heading);
-      font-size: 12px;
-      color: var(--color-stone);
-      background: var(--color-light);
-    }
-
-    .step.done { background: var(--color-sage); border-color: var(--color-sage); color: #fff; }
-    .step.current { background: var(--color-terracotta); border-color: var(--color-terracotta); color: #fff; }
-    .line { flex: 1; height: 2px; background: var(--color-sand); }
-    .line.done { background: var(--color-sage); }
-
-    .layout {
-      display: grid;
-      grid-template-columns: 1.1fr 1fr;
-      gap: 20px;
-    }
-
-    .card {
-      background: #fff;
-      border: 1px solid var(--color-sand);
-      border-radius: 12px;
-      padding: 24px;
-      box-shadow: var(--shadow-sm);
-      transition: transform .15s ease, box-shadow .15s ease;
-    }
-
-    .card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
-
-    .profile-grid {
-      display: grid;
-      grid-template-columns: 120px 1fr;
-      gap: 16px;
-      align-items: start;
-    }
-
-    .passport {
-      width: 120px;
-      height: 120px;
-      border-radius: 14px;
-      background: #e8e6dc;
-      display: grid;
-      place-items: center;
-      box-shadow: var(--shadow-sm);
-    }
-
-    .passport::before {
-      content: '';
-      width: 54px;
-      height: 54px;
-      border-radius: 50%;
-      background: #b0aea5;
-      box-shadow: 0 64px 0 20px #b0aea5;
-      transform: translateY(-20px);
-    }
-
-    .meta { display: grid; gap: 6px; }
-    .meta small { color: var(--color-stone); }
-
-    .qr {
-      width: 280px;
-      height: 280px;
-      margin: 16px auto 14px;
-      border-radius: var(--radius-md);
-      border: 1.5px solid var(--color-sand);
-      background:
-        linear-gradient(90deg, transparent 48%, #d97757 48%, #d97757 52%, transparent 52%),
-        linear-gradient(0deg, transparent 48%, #d97757 48%, #d97757 52%, transparent 52%),
-        repeating-linear-gradient(90deg, #d8d6cc 0 12px, #f5f4ef 12px 24px),
-        repeating-linear-gradient(0deg, #d8d6cc 0 12px, #f5f4ef 12px 24px);
-      background-size: 100% 100%, 100% 100%, 24px 24px, 24px 24px;
-      animation: qr-pop .3s ease;
-    }
-
-    @keyframes qr-pop {
-      from { opacity: 0; transform: scale(.8); }
-      to { opacity: 1; transform: scale(1); }
-    }
-
-    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
-
-    button {
-      border: 0;
-      border-radius: 8px;
-      padding: 12px 20px;
-      font: 500 15px/1 var(--font-heading);
-      cursor: pointer;
-      transition: transform .1s ease, box-shadow .15s ease;
-    }
-
-    button:active { transform: scale(.97); }
-    .btn-primary { background: var(--color-terracotta); color: var(--color-light); box-shadow: var(--shadow-sm); }
-    .btn-secondary { background: transparent; border: 1.5px solid var(--color-stone); color: var(--color-dark); }
-    .btn-ghost { background: transparent; color: var(--color-terracotta); }
-
-    .scanner {
-      margin-top: 20px;
-      min-height: 280px;
-      background: #111;
-      border-radius: 16px;
+    .phone {
+      width: min(430px, 100%);
+      min-height: 860px;
+      border-radius: 40px;
+      background: #000;
       position: relative;
       overflow: hidden;
-      display: grid;
-      place-items: center;
-      color: #faf9f5;
-      font-family: var(--font-heading);
     }
 
-    .scan-frame {
-      width: 250px;
-      height: 250px;
-      border: 2px dashed rgba(232, 230, 220, 0.7);
+    .status {
+      display: flex;
+      justify-content: space-between;
+      padding: 18px 20px 8px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    .done {
+      text-align: right;
+      padding: 6px 22px 0;
+      color: #2c9bff;
+      font: 500 46px/1 'Poppins', sans-serif;
+      letter-spacing: -1px;
+    }
+
+    .carousel {
+      margin-top: 12px;
+      display: flex;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      gap: 16px;
+      padding: 0 16px 22px;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    .carousel::-webkit-scrollbar { display: none; }
+
+    .slide {
+      min-width: calc(100% - 2px);
+      scroll-snap-align: center;
+      border-radius: 46px;
+      background: var(--terracotta);
+      height: 760px;
+      padding: 44px 30px 34px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
+    }
+
+    .brand {
+      text-align: center;
+      font-size: 66px;
+      font-weight: 600;
+      line-height: 1;
+      margin: 6px 0 0;
+      color: var(--cream);
+    }
+
+    .art {
+      margin: 36px auto 24px;
+      width: 100%;
+      max-width: 320px;
+      height: 340px;
+      position: relative;
+    }
+
+    .art svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .headline {
+      margin: 18px auto 0;
+      max-width: 320px;
+      text-align: center;
+      color: var(--cream);
+      font-size: 74px;
+      line-height: 1.05;
+      letter-spacing: -1.2px;
+    }
+
+    .cta {
+      position: absolute;
+      left: 30px;
+      right: 30px;
+      bottom: 32px;
+      height: 62px;
+      border-radius: 22px;
+      border: 0;
+      background: var(--white);
+      color: #181818;
+      font: 600 22px/1 'Poppins', sans-serif;
+    }
+
+    .slide.secondary {
+      background: linear-gradient(180deg, #b46843 0%, #cb7b55 100%);
+    }
+
+    .person {
+      width: 100%;
+      max-width: 330px;
+      height: 430px;
+      margin: 22px auto 10px;
+      border-radius: 30px;
+      background:
+        radial-gradient(circle at 50% 15%, #f3d3b4 0 16%, transparent 17%),
+        radial-gradient(circle at 52% 17%, #2f2322 0 23%, transparent 24%),
+        radial-gradient(circle at 50% 40%, #6e8055 0 32%, transparent 33%),
+        radial-gradient(ellipse at 50% 84%, #1e1e26 0 50%, transparent 52%),
+        linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(38,18,12,.35) 100%);
+      position: relative;
+    }
+
+    .person::before,
+    .person::after {
+      content: '';
+      position: absolute;
+      border: 2px dashed rgba(106, 155, 204, .95);
+      border-radius: 999px;
+      filter: drop-shadow(0 0 6px rgba(106,155,204,.6));
+    }
+
+    .person::before {
+      width: 460px;
+      height: 150px;
+      left: -70px;
+      top: 148px;
+      transform: rotate(-10deg);
+    }
+
+    .person::after {
+      width: 420px;
+      height: 150px;
+      left: -50px;
+      top: 270px;
+      transform: rotate(10deg);
+    }
+
+    .subline {
+      text-align: center;
+      color: var(--cream);
+      font-size: 24px;
+      margin-top: 6px;
+      line-height: 1.25;
+    }
+
+    .progress {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.45);
+    }
+
+    .dot.active { background: var(--white); width: 22px; }
+
+    .next-step {
+      margin: 12px 16px 0;
       border-radius: 20px;
-      box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.35);
+      background: #101010;
+      border: 1px solid #242424;
+      padding: 14px 16px;
+      color: #d1d1d1;
+      font: 500 14px/1.45 'Poppins', sans-serif;
     }
 
-    .supabase-note {
-      margin-top: 18px;
-      border-left: 4px solid var(--color-sky);
-      background: #f1f5fb;
-      padding: 12px 14px;
-      border-radius: 8px;
-      color: #24364c;
-    }
-
-    @media (max-width: 950px) {
-      .layout { grid-template-columns: 1fr; }
-      .nav-links { display: none; }
-      main { width: calc(100% - 1.5rem); }
+    .next-step strong { color: #ffffff; }
+    .chip {
+      display: inline-flex;
+      margin-top: 8px;
+      border-radius: 999px;
+      padding: 6px 10px;
+      background: rgba(120,140,93,.16);
+      color: #9bc088;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .1px;
     }
   </style>
 </head>
 <body>
-  <header class="topbar">
-    <div class="topbar-inner">
-      <div class="logo">EV</div>
-      <nav class="nav-links">
-        <a class="active" href="#">Student</a>
-        <a href="#">Examiner</a>
-        <a href="#">Admin</a>
-        <a href="#">Logs</a>
-      </nav>
-      <div class="avatar" aria-label="User avatar placeholder"></div>
-    </div>
-  </header>
+  <main class="phone">
+    <div class="status"><span>1:28</span><span>33%</span></div>
+    <div class="done">Done</div>
 
-  <main>
-    <section class="hero">
-      <h1>ExamVerify — Anthropic-style interface concept</h1>
-      <p>Clean, warm parchment visuals with terracotta accents and role-focused UX for student verification, examiner scan approvals, and admin oversight.</p>
-      <div class="badge-row">
-        <span class="status-badge approved">Verified Payment</span>
-        <span class="status-badge pending">QR Awaiting Scan</span>
-        <span class="status-badge denied">Denied Example</span>
-      </div>
-      <div class="stepper" aria-label="Registration progress">
-        <span class="step done">✓</span><span class="line done"></span>
-        <span class="step done">✓</span><span class="line"></span>
-        <span class="step current">3</span><span class="line"></span>
-        <span class="step">4</span>
-      </div>
+    <section class="carousel" aria-label="Claude style onboarding cards">
+      <article class="slide">
+        <h1 class="brand">Claude</h1>
+        <div class="art" aria-hidden="true">
+          <svg viewBox="0 0 300 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <g stroke="#f4efe7" stroke-width="8" stroke-linecap="round">
+              <path d="M150 150 L150 30"/><path d="M150 150 L250 80"/><path d="M150 150 L270 140"/><path d="M150 150 L210 230"/><path d="M150 150 L70 240"/><path d="M150 150 L20 180"/><path d="M150 150 L70 100"/>
+            </g>
+            <g fill="#f4efe7"><circle cx="150" cy="150" r="14"/><circle cx="150" cy="30" r="10"/><circle cx="250" cy="80" r="10"/><circle cx="270" cy="140" r="10"/><circle cx="210" cy="230" r="10"/><circle cx="70" cy="240" r="10"/><circle cx="20" cy="180" r="10"/><circle cx="70" cy="100" r="10"/></g>
+            <g stroke="#111" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M35 230 C25 120, 115 55, 165 58 C220 60, 255 100, 266 140 C276 173, 284 188, 294 200 C304 212, 299 236, 285 244 C272 251, 269 270, 268 294"/>
+              <path d="M55 285 C63 244, 56 214, 50 170 C44 124, 75 92, 104 80 C130 69, 172 70, 197 78 C220 86, 237 104, 245 130 C253 153, 269 165, 276 182 C284 201, 278 220, 264 227 C251 234, 251 253, 252 293"/>
+              <path d="M89 286 C95 245, 90 214, 84 178 C79 142, 102 121, 129 112 C157 103, 188 102, 212 109 C234 116, 244 136, 246 155 C248 174, 263 182, 267 197 C273 216, 266 228, 252 236 C239 244, 240 260, 242 289"/>
+              <path d="M118 285 C122 248, 111 218, 105 195 C99 172, 111 154, 129 143 C147 133, 168 129, 187 134 C204 139, 218 153, 220 170 C222 188, 227 195, 237 203 C248 212, 247 228, 234 234 C219 241, 210 250, 210 262 C210 271, 213 278, 216 292"/>
+            </g>
+          </svg>
+        </div>
+        <p class="headline">Write smarter,<br />verify faster.</p>
+        <button class="cta" type="button">Join millions of users worldwide</button>
+      </article>
+
+      <article class="slide secondary">
+        <h2 class="headline" style="font-size:86px; margin-top:0;">Keep<br />thinking.</h2>
+        <div class="person" aria-hidden="true"></div>
+        <p class="subline"><strong>ExamVerify Claude UI</strong><br />The verification flow for problem solvers</p>
+        <button class="cta" type="button">Continue to role selection</button>
+      </article>
     </section>
 
-    <section class="layout">
-      <article class="card">
-        <h2>Student dashboard preview</h2>
-        <div class="profile-grid">
-          <div class="passport" aria-hidden="true"></div>
-          <div class="meta">
-            <h3>Chinedu Okonkwo</h3>
-            <small>MAT/2022/1142</small>
-            <p>Department: Computer Science</p>
-            <p>Faculty: Physical Sciences</p>
-            <p>Level: 400</p>
-          </div>
-        </div>
+    <div class="progress" aria-hidden="true">
+      <span class="dot active"></span>
+      <span class="dot"></span>
+      <span class="dot"></span>
+    </div>
 
-        <div class="qr" role="img" aria-label="No QR code yet placeholder"></div>
-
-        <div class="btn-row">
-          <button class="btn-primary">Download QR</button>
-          <button class="btn-secondary">Verify Payment</button>
-          <button class="btn-ghost">View History</button>
-        </div>
-      </article>
-
-      <article class="card">
-        <h2>Examiner scanner preview</h2>
-        <p>Full-viewport scanning experience with centered frame, quick result panel, and approve/deny actions.</p>
-        <div class="scanner">
-          <div class="scan-frame"></div>
-        </div>
-        <div class="supabase-note">
-          <strong>Backend migration note:</strong> this concept replaces MongoDB with Supabase (Postgres + Auth + Storage) as requested, while preserving the same verification flow and role-based access controls.
-        </div>
-      </article>
+    <section class="next-step">
+      <strong>Next implementation step:</strong> wire this onboarding replica into role routes (Student, Examiner, Admin), and connect auth/data to <strong>Supabase</strong> (Auth, Postgres, Storage) instead of MongoDB.
+      <div class="chip">Supabase migration in progress</div>
     </section>
   </main>
 </body>
