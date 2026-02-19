@@ -14,34 +14,29 @@
       --terracotta: #cd7758;
       --terracotta-deep: #b66548;
       --white: #fff;
-      --dark: #141413;
       --stone: #b0aea5;
       --sky: #6a9bcc;
       --sage: #788c5d;
     }
-
     * { box-sizing: border-box; }
-
     body {
       margin: 0;
       background: var(--black);
       color: var(--white);
       font-family: 'Lora', Georgia, serif;
       min-height: 100vh;
+      padding: 24px 10px 40px;
       display: grid;
-      place-items: center;
-      padding: 24px 10px;
+      gap: 16px;
+      place-items: start center;
     }
 
     .phone {
       width: min(430px, 100%);
-      min-height: 860px;
       border-radius: 40px;
       background: #000;
-      position: relative;
       overflow: hidden;
     }
-
     .status {
       display: flex;
       justify-content: space-between;
@@ -50,7 +45,6 @@
       font-size: 20px;
       font-weight: 600;
     }
-
     .done {
       text-align: right;
       padding: 6px 22px 0;
@@ -58,7 +52,6 @@
       font: 500 46px/1 'Poppins', sans-serif;
       letter-spacing: -1px;
     }
-
     .carousel {
       margin-top: 12px;
       display: flex;
@@ -66,12 +59,9 @@
       scroll-snap-type: x mandatory;
       gap: 16px;
       padding: 0 16px 22px;
-      -ms-overflow-style: none;
       scrollbar-width: none;
     }
-
     .carousel::-webkit-scrollbar { display: none; }
-
     .slide {
       min-width: calc(100% - 2px);
       scroll-snap-align: center;
@@ -83,122 +73,37 @@
       overflow: hidden;
       box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
     }
-
-    .brand {
-      text-align: center;
-      font-size: 66px;
-      font-weight: 600;
-      line-height: 1;
-      margin: 6px 0 0;
-      color: var(--cream);
-    }
-
-    .art {
-      margin: 36px auto 24px;
-      width: 100%;
-      max-width: 320px;
-      height: 340px;
-      position: relative;
-    }
-
-    .art svg {
-      width: 100%;
-      height: 100%;
-    }
-
-    .headline {
-      margin: 18px auto 0;
-      max-width: 320px;
-      text-align: center;
-      color: var(--cream);
-      font-size: 74px;
-      line-height: 1.05;
-      letter-spacing: -1.2px;
-    }
-
+    .brand { text-align: center; font-size: 66px; font-weight: 600; line-height: 1; margin: 6px 0 0; color: var(--cream); }
+    .art { margin: 36px auto 24px; width: 100%; max-width: 320px; height: 340px; }
+    .art svg { width: 100%; height: 100%; }
+    .headline { margin: 18px auto 0; max-width: 320px; text-align: center; color: var(--cream); font-size: 74px; line-height: 1.05; letter-spacing: -1.2px; }
     .cta {
-      position: absolute;
-      left: 30px;
-      right: 30px;
-      bottom: 32px;
-      height: 62px;
-      border-radius: 22px;
-      border: 0;
-      background: var(--white);
-      color: #181818;
-      font: 600 22px/1 'Poppins', sans-serif;
+      position: absolute; left: 30px; right: 30px; bottom: 32px; height: 62px; border-radius: 22px; border: 0;
+      background: var(--white); color: #181818; font: 600 22px/1 'Poppins', sans-serif;
     }
-
-    .slide.secondary {
-      background: linear-gradient(180deg, #b46843 0%, #cb7b55 100%);
-    }
-
+    .slide.secondary { background: linear-gradient(180deg, #b46843 0%, #cb7b55 100%); }
     .person {
-      width: 100%;
-      max-width: 330px;
-      height: 430px;
-      margin: 22px auto 10px;
-      border-radius: 30px;
+      width: 100%; max-width: 330px; height: 430px; margin: 22px auto 10px; border-radius: 30px; position: relative;
       background:
         radial-gradient(circle at 50% 15%, #f3d3b4 0 16%, transparent 17%),
         radial-gradient(circle at 52% 17%, #2f2322 0 23%, transparent 24%),
         radial-gradient(circle at 50% 40%, #6e8055 0 32%, transparent 33%),
         radial-gradient(ellipse at 50% 84%, #1e1e26 0 50%, transparent 52%),
         linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(38,18,12,.35) 100%);
-      position: relative;
     }
-
-    .person::before,
-    .person::after {
-      content: '';
-      position: absolute;
-      border: 2px dashed rgba(106, 155, 204, .95);
-      border-radius: 999px;
+    .person::before, .person::after {
+      content: ''; position: absolute; border: 2px dashed rgba(106, 155, 204, .95); border-radius: 999px;
       filter: drop-shadow(0 0 6px rgba(106,155,204,.6));
     }
-
-    .person::before {
-      width: 460px;
-      height: 150px;
-      left: -70px;
-      top: 148px;
-      transform: rotate(-10deg);
-    }
-
-    .person::after {
-      width: 420px;
-      height: 150px;
-      left: -50px;
-      top: 270px;
-      transform: rotate(10deg);
-    }
-
-    .subline {
-      text-align: center;
-      color: var(--cream);
-      font-size: 24px;
-      margin-top: 6px;
-      line-height: 1.25;
-    }
-
-    .progress {
-      display: flex;
-      justify-content: center;
-      gap: 8px;
-      margin-top: 8px;
-    }
-
-    .dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.45);
-    }
-
+    .person::before { width: 460px; height: 150px; left: -70px; top: 148px; transform: rotate(-10deg); }
+    .person::after { width: 420px; height: 150px; left: -50px; top: 270px; transform: rotate(10deg); }
+    .subline { text-align: center; color: var(--cream); font-size: 24px; margin-top: 6px; line-height: 1.25; }
+    .progress { display: flex; justify-content: center; gap: 8px; margin-top: 8px; }
+    .dot { width: 8px; height: 8px; border-radius: 999px; background: rgba(255,255,255,.45); }
     .dot.active { background: var(--white); width: 22px; }
 
     .next-step {
-      margin: 12px 16px 0;
+      margin: 14px 16px 0;
       border-radius: 20px;
       background: #101010;
       border: 1px solid #242424;
@@ -206,19 +111,52 @@
       color: #d1d1d1;
       font: 500 14px/1.45 'Poppins', sans-serif;
     }
-
     .next-step strong { color: #ffffff; }
-    .chip {
-      display: inline-flex;
-      margin-top: 8px;
-      border-radius: 999px;
-      padding: 6px 10px;
-      background: rgba(120,140,93,.16);
-      color: #9bc088;
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: .1px;
+    .chip { display: inline-flex; margin-top: 8px; border-radius: 999px; padding: 6px 10px; background: rgba(120,140,93,.16); color: #9bc088; font-size: 12px; font-weight: 600; }
+
+    .implementation {
+      width: min(430px, 100%);
+      border-radius: 30px;
+      border: 1px solid #252525;
+      background: #0e0e0e;
+      padding: 16px;
+      font-family: 'Poppins', sans-serif;
     }
+    .implementation h3 {
+      margin: 0 0 10px;
+      font-size: 16px;
+      color: #f4efe7;
+      font-weight: 600;
+    }
+    .roles {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .role {
+      border-radius: 16px;
+      border: 1px solid #313131;
+      background: #161616;
+      padding: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #f4efe7;
+    }
+    .role small { color: #a7a7a7; display: block; font-weight: 500; }
+    .role span { font-weight: 600; }
+    .role b { color: var(--terracotta); }
+
+    .map {
+      border-radius: 16px;
+      background: linear-gradient(180deg, #171717 0%, #131313 100%);
+      border: 1px solid #2a2a2a;
+      padding: 12px;
+      color: #dddddd;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .map code { color: #9bc088; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
   </style>
 </head>
 <body>
@@ -266,5 +204,21 @@
       <div class="chip">Supabase migration in progress</div>
     </section>
   </main>
+
+  <section class="implementation" aria-label="Implementation progress">
+    <h3>Step 2 — Role gateway wired to Supabase plan</h3>
+    <div class="roles">
+      <article class="role"><div><span>Student Portal</span><small>Profile + payment verify + QR view</small></div><b>/student/dashboard</b></article>
+      <article class="role"><div><span>Examiner Portal</span><small>Scan QR + approve/deny + live history</small></div><b>/examiner/scanner</b></article>
+      <article class="role"><div><span>Admin Portal</span><small>Stats + users + verification logs</small></div><b>/admin/overview</b></article>
+    </div>
+    <div class="map">
+      <strong>Supabase mapping:</strong><br />
+      <code>auth.users</code> → user identity + role metadata<br />
+      <code>public.students</code> → student academic profile and QR token status<br />
+      <code>public.payments</code> → remita responses and verification flags<br />
+      <code>public.verifications</code> → examiner approvals/denials audit trail
+    </div>
+  </section>
 </body>
 </html>
