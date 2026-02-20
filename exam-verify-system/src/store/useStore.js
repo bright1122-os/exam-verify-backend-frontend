@@ -3,14 +3,32 @@ import api from '../services/api';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
 
-export const useStore = create((set, get) => ({
+// Helper: extract token+user from either response format:
+//   { token, user }          ← monorepo server
+//   { data: { token, user }} ← standalone backend
+function parseAuthResponse(res) {
+  const token = res.token ?? res.data?.token;
+  const user = res.user ?? res.data?.user;
+  return { token, user };
+}
+
+// Helper: extract user from getMe response:
+//   { data: user }          ← monorepo server (user directly in data)
+//   { data: { user } }      ← standalone backend
+function parseUserResponse(res) {
+  if (res.data?.id || res.data?._id) return res.data;      // monorepo: data IS the user
+  if (res.data?.user) return res.data.user;                 // standalone: data.user
+  return res.user ?? null;
+}
+
+export const useStore = create((set) => ({
   user: null,
   isAuthenticated: false,
   userType: null,
   loading: true,
   studentData: null,
 
-  // Initialize auth from stored token
+  // Initialize auth from stored token on app load
   initializeAuth: async () => {
     set({ loading: true });
     const token = localStorage.getItem('token');
@@ -22,13 +40,8 @@ export const useStore = create((set, get) => ({
 
     try {
       const res = await api.get('/auth/me');
-      const user = res.data.user;
-      set({
-        user,
-        isAuthenticated: true,
-        userType: user.role,
-        loading: false,
-      });
+      const user = parseUserResponse(res);
+      set({ user, isAuthenticated: true, userType: user.role, loading: false });
     } catch (error) {
       localStorage.removeItem('token');
       set({ user: null, isAuthenticated: false, userType: null, loading: false });
@@ -38,13 +51,9 @@ export const useStore = create((set, get) => ({
   // Sign in with email/password
   signIn: async (email, password) => {
     const res = await api.post('/auth/login', { email, password });
-    const { token, user } = res.data;
+    const { token, user } = parseAuthResponse(res);
     localStorage.setItem('token', token);
-    set({
-      user,
-      isAuthenticated: true,
-      userType: user.role,
-    });
+    set({ user, isAuthenticated: true, userType: user.role });
     return user;
   },
 
@@ -56,17 +65,13 @@ export const useStore = create((set, get) => ({
       password,
       role: metadata.role || 'student',
     });
-    const { token, user } = res.data;
+    const { token, user } = parseAuthResponse(res);
     localStorage.setItem('token', token);
-    set({
-      user,
-      isAuthenticated: true,
-      userType: user.role,
-    });
+    set({ user, isAuthenticated: true, userType: user.role });
     return user;
   },
 
-  // Google OAuth - redirect to backend
+  // Google OAuth — redirect to backend
   signInWithGoogle: () => {
     window.location.href = `${API_BASE_URL}/auth/google`;
   },
@@ -76,12 +81,8 @@ export const useStore = create((set, get) => ({
     localStorage.setItem('token', token);
     try {
       const res = await api.get('/auth/me');
-      const user = res.data.user;
-      set({
-        user,
-        isAuthenticated: true,
-        userType: user.role,
-      });
+      const user = parseUserResponse(res);
+      set({ user, isAuthenticated: true, userType: user.role });
       return user;
     } catch (error) {
       localStorage.removeItem('token');
@@ -94,15 +95,10 @@ export const useStore = create((set, get) => ({
     try {
       await api.post('/auth/logout');
     } catch (e) {
-      // ignore logout errors
+      // ignore errors
     }
     localStorage.removeItem('token');
-    set({
-      user: null,
-      isAuthenticated: false,
-      userType: null,
-      studentData: null,
-    });
+    set({ user: null, isAuthenticated: false, userType: null, studentData: null });
   },
 
   // Update student data in store

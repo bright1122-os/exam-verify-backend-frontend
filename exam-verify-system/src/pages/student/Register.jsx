@@ -115,13 +115,16 @@ export default function Register() {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
 
-        const student = res.data?.student;
+        // Monorepo server: { data: student } — standalone: { data: { student } }
+        const student = res.data?.id || res.data?._id ? res.data : res.data?.student;
         updateStudentData(student);
 
         // Initiate payment via backend
         try {
           const paymentRes = await api.post('/payment/initiate');
-          setPaymentData(paymentRes.data?.payment);
+          // Monorepo: { data: payment } — standalone: { data: { payment } }
+          const pData = paymentRes.data?.rrr ? paymentRes.data : paymentRes.data?.payment;
+          setPaymentData(pData);
         } catch (paymentError) {
           console.warn('Payment initiation failed, continuing:', paymentError);
           // Set a demo fallback so the UI can still proceed

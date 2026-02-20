@@ -23,7 +23,10 @@
   "env": {
     "MONGODB_URI": "mongodb+srv://agwunobisomtochukwu_db_user:sr32R1MIdaZRHrIk@cluster0.klrslgz.mongodb.net/?appName=Cluster0",
     "NODE_ENV": "production",
-    "JWT_SECRET": "exam_verify_prod_secret_unique_9988",
-    "QR_ENCRYPTION_KEY": "12345678901234567890123456789012"
+    "JWT_SECRET": "09f98af5f9f3f5c1a2cd2b703037240561ca83251afd4f627e8e38cd6372ade3",
+    "JWT_EXPIRE": "7d",
+    "SESSION_SECRET": "9a0545f126a9f74555eed1da4b3d4d14886aa75c4a6b47b9d4cc8ec17ecc0cb2",
+    "QR_ENCRYPTION_KEY": "ed4794c4a794a46c246a20045b8273a6",
+    "CLIENT_URL": "https://exam-verify-system-yv8p.vercel.app"
   }
 }
