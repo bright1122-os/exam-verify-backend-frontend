@@ -84,6 +84,14 @@ export const login = async (req, res, next) => {
             });
         }
 
+        // Google-only accounts have no password
+        if (!user.password) {
+            return res.status(401).json({
+                success: false,
+                error: 'This account uses Google sign-in. Please use "Continue with Google".'
+            });
+        }
+
         // Check if password matches
         const isMatch = await user.matchPassword(password);
 
@@ -128,4 +136,20 @@ export const getMe = async (req, res, next) => {
         success: true,
         data: user,
     });
+};
+
+// @desc    Google OAuth callback — redirect to frontend with JWT
+// @route   GET /api/v1/auth/google/callback
+// @access  Public (called by Passport after Google auth)
+export const googleCallback = (req, res) => {
+    try {
+        const token = jwt.sign({ id: req.user._id }, process.env.JWT_SECRET, {
+            expiresIn: process.env.JWT_EXPIRE || '7d',
+        });
+        const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+        res.redirect(`${clientUrl}/auth/callback?token=${token}&role=${req.user.role}`);
+    } catch (err) {
+        const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+        res.redirect(`${clientUrl}/auth/login?error=google_failed`);
+    }
 };

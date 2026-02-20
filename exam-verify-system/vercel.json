@@ -27,6 +27,9 @@
     "JWT_EXPIRE": "7d",
     "SESSION_SECRET": "9a0545f126a9f74555eed1da4b3d4d14886aa75c4a6b47b9d4cc8ec17ecc0cb2",
     "QR_ENCRYPTION_KEY": "ed4794c4a794a46c246a20045b8273a6",
-    "CLIENT_URL": "https://exam-verify-system-yv8p.vercel.app"
+    "CLIENT_URL": "https://exam-verify-system-yv8p.vercel.app",
+    "GOOGLE_CLIENT_ID": "SET_IN_VERCEL_DASHBOARD",
+    "GOOGLE_CLIENT_SECRET": "SET_IN_VERCEL_DASHBOARD",
+    "GOOGLE_CALLBACK_URL": "https://exam-verify-system-yv8p.vercel.app/api/v1/auth/google/callback"
   }
 }

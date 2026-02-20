@@ -4,6 +4,17 @@ import helmet from 'helmet';
 import mongoSanitize from 'express-mongo-sanitize';
 import rateLimit from 'express-rate-limit';
 import mongoose from 'mongoose';
+import session from 'express-session';
+import MongoStore from 'connect-mongo';
+import passport from './config/passport.js';
+
+// ── Routes ──
+import authRoutes from './routes/auth.js';
+import studentRoutes from './routes/student.js';
+import paymentRoutes from './routes/payment.js';
+import qrRoutes from './routes/qr.js';
+import examinerRoutes from './routes/examiner.js';
+import adminRoutes from './routes/admin.js';
 
 // ── Cached MongoDB connection (required for Vercel serverless) ──
 let cached = global._mongooseCache;
@@ -59,13 +70,24 @@ app.use(async (req, res, next) => {
   }
 });
 
-// ── Routes ──
-import authRoutes from './routes/auth.js';
-import studentRoutes from './routes/student.js';
-import paymentRoutes from './routes/payment.js';
-import qrRoutes from './routes/qr.js';
-import examinerRoutes from './routes/examiner.js';
-import adminRoutes from './routes/admin.js';
+// ── Session (required for Passport Google OAuth state) ──
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'exam-verify-session-secret',
+  resave: false,
+  saveUninitialized: false,
+  store: MongoStore.create({
+    mongoUrl: process.env.MONGODB_URI,
+    ttl: 5 * 60, // 5 minutes — only needed during OAuth handshake
+  }),
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 5 * 60 * 1000, // 5 minutes
+  },
+}));
+
+// ── Passport ──
+app.use(passport.initialize());
+app.use(passport.session());
 
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/student', studentRoutes);
