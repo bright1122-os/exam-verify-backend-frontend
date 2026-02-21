@@ -1,276 +1,462 @@
-import { motion } from 'framer-motion';
+import { useEffect, useRef } from 'react';
+import { motion, useInView, useScroll, useTransform } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Shield, CheckCircle, Zap, Lock, QrCode, Users, ArrowRight, Sparkles, GraduationCap, ScanLine, LogIn, ExternalLink } from 'lucide-react';
-import { heroMockups, mockStudentPhotos, generateAvatar } from '../utils/mockImages';
+import { Shield, CheckCircle, Zap, Lock, QrCode, Users, ArrowRight, ArrowUpRight, Sparkles, GraduationCap, ScanLine, ExternalLink, ChevronDown } from 'lucide-react';
+import { heroMockups } from '../utils/mockImages';
 
-export default function Home() {
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1, delayChildren: 0.2 }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.23, 1, 0.32, 1] } }
-  };
+// Scroll-reveal wrapper component
+function Reveal({ children, delay = 0, className = '' }) {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: '-80px' });
 
   return (
-    <div className="bg-white selection:bg-primary/10">
-      {/* ── Landing Hero ── */}
-      <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
-        {/* Subtle background element */}
-        <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-[800px] h-[800px] bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 32 }}
+      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 32 }}
+      transition={{ duration: 0.8, delay, ease: [0.25, 0.46, 0.45, 0.94] }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
-        <div className="max-w-[1200px] mx-auto px-6 lg:px-8">
-          <div className="flex flex-col lg:flex-row items-center gap-20">
-            <motion.div
-              className="lg:w-3/5"
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-            >
-              <motion.div variants={itemVariants} className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium mb-6">
-                <Sparkles className="w-4 h-4" />
+export default function Home() {
+  const heroRef = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: heroRef,
+    offset: ['start start', 'end start'],
+  });
+  const heroImageY = useTransform(scrollYProgress, [0, 1], ['0%', '12%']);
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
+
+  const features = [
+    {
+      icon: Shield,
+      title: 'Ironclad Security',
+      description: 'Military-grade AES-256 encryption for all student passes. Tied to specific sessions, expires automatically.',
+      accent: 'bg-primary',
+    },
+    {
+      icon: Zap,
+      title: 'Instant Processing',
+      description: 'Scan and verify in under 300ms. Reduce hall entry times by up to 80% compared to manual checks.',
+      accent: 'bg-success',
+    },
+    {
+      icon: Lock,
+      title: 'Verified Payments',
+      description: 'Direct Remita integration ensures only fee-cleared students receive an exam pass.',
+      accent: 'bg-ink',
+    },
+  ];
+
+  const processSteps = [
+    { number: '01', title: 'Register', description: 'Create account with university credentials and complete identity verification.' },
+    { number: '02', title: 'Payment', description: 'Pay examination fees through Remita. Verification is instant.' },
+    { number: '03', title: 'QR Pass', description: 'Receive encrypted, one-time-use QR exam pass linked to your biometric data.' },
+    { number: '04', title: 'Scan & Enter', description: 'Examiner scans your QR at the hall entrance. Access granted in milliseconds.' },
+  ];
+
+  return (
+    <div className="bg-parchment selection:bg-primary/10">
+
+      {/* ═══════════════════════════════════════════
+          HERO SECTION — Dark, immersive, authoritative
+          ═══════════════════════════════════════════ */}
+      <section ref={heroRef} className="relative min-h-screen flex items-center bg-ink overflow-hidden">
+        {/* Subtle gradient orbs */}
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-primary/8 rounded-full blur-[180px] pointer-events-none" />
+        <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-success/5 rounded-full blur-[140px] pointer-events-none" />
+
+        {/* Noise texture */}
+        <div className="absolute inset-0 noise-overlay" />
+
+        <motion.div style={{ opacity: heroOpacity }} className="relative z-10 section-container w-full">
+          <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-20 pt-32 pb-20 lg:pt-40 lg:pb-32">
+
+            {/* Left — Text */}
+            <div className="lg:w-3/5">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/[0.06] border border-white/[0.08] text-white/70 rounded-full text-label uppercase font-body font-medium mb-8"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
                 Next-Generation Hall Security
               </motion.div>
 
-              <motion.h1 variants={itemVariants} className="text-5xl lg:text-7xl font-heading font-bold text-slate-900 leading-[1.05] mb-8 tracking-tight">
-                Secure Examination <br />
-                <span className="text-primary italic">Verification</span> System
+              <motion.h1
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+                className="text-display-md lg:text-display-lg xl:text-display-xl font-heading font-bold text-white leading-[1.02] mb-8"
+              >
+                Secure Exam{' '}
+                <span className="text-editorial text-primary-light">Verification</span>
               </motion.h1>
 
-              <motion.p variants={itemVariants} className="text-xl text-slate-600 mb-10 max-w-xl leading-relaxed">
-                Eliminate impersonation and fraud with end-to-end encrypted identification protocols. Secure, real-time verification for every student.
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, delay: 0.5 }}
+                className="text-body-lg text-white/50 mb-12 max-w-xl leading-relaxed"
+              >
+                Eliminate impersonation and fraud with end-to-end encrypted identification protocols. Real-time verification for every student entering the examination hall.
               </motion.p>
 
-              <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 items-center">
-                <Link to="/auth/signup?role=student" className="btn-primary w-full sm:w-auto text-lg group">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.7 }}
+                className="flex flex-col sm:flex-row gap-4 items-start"
+              >
+                <Link to="/auth/signup?role=student" className="btn-light group text-base">
                   Get My Exam Pass
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Link>
-                <Link to="/auth/login" className="btn-secondary w-full sm:w-auto text-lg">
+                <Link to="/auth/login" className="btn-ghost-light text-base">
                   Sign In
                 </Link>
               </motion.div>
-            </motion.div>
+            </div>
 
+            {/* Right — Hero Image */}
             <motion.div
               className="lg:w-2/5 relative"
-              initial={{ opacity: 0, scale: 0.9, x: 20 }}
-              animate={{ opacity: 1, scale: 1, x: 0 }}
-              transition={{ duration: 1, ease: [0.23, 1, 0.32, 1] }}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 1.2, delay: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
             >
-              <div className="relative z-10 rounded-2xl overflow-hidden shadow-2xl border border-slate-200">
-                <img src={heroMockups.queuing} alt="Queuing Students" className="w-full h-auto object-cover" />
-                <div className="absolute inset-x-0 bottom-0 p-6 bg-gradient-to-t from-black/80 to-transparent">
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
-                    <p className="text-white font-medium">Live Verification Active</p>
+              <motion.div style={{ y: heroImageY }} className="relative z-10">
+                <div className="img-reveal rounded-2xl overflow-hidden shadow-premium-lg border border-white/[0.08]">
+                  <img
+                    src={heroMockups.queuing}
+                    alt="Students entering examination hall"
+                    className="w-full h-auto object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-ink/60 via-transparent to-transparent" />
+                  <div className="absolute inset-x-0 bottom-0 p-6">
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
+                      <p className="text-white/90 font-body font-medium text-sm">Live Verification Active</p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Floating ID Card Component */}
-              <motion.div
-                className="absolute -bottom-10 -left-10 z-20 hidden md:block"
-                animate={{ y: [0, -10, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-              >
-                <div className="bg-white rounded-xl shadow-premium p-4 w-64 border border-slate-100">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                      <QrCode className="w-6 h-6" />
+                {/* Floating Card */}
+                <motion.div
+                  className="absolute -bottom-8 -left-8 z-20 hidden lg:block"
+                  animate={{ y: [0, -8, 0] }}
+                  transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+                >
+                  <div className="bg-white rounded-xl shadow-premium-lg p-4 w-56 border border-slate-100">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                        <QrCode className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="font-heading font-bold text-slate-900 text-sm leading-none">Exam Pass</p>
+                        <p className="text-micro text-slate-500 uppercase mt-1">AES-256 Encrypted</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-bold text-slate-900 leading-none">Exam ID</p>
-                      <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-1">Status: Active</p>
+                    <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
+                      <div className="w-3/4 h-full bg-primary rounded-full" />
                     </div>
                   </div>
-                  <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden mb-3">
-                    <div className="w-3/4 h-full bg-primary" />
-                  </div>
-                  <p className="text-[11px] text-slate-400">Unique identifier encrypted via AES-256</p>
-                </div>
+                </motion.div>
               </motion.div>
             </motion.div>
           </div>
-        </div>
+
+          {/* Scroll indicator */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.5, duration: 1 }}
+            className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
+          >
+            <span className="text-micro uppercase text-white/30 font-body tracking-widest">Scroll</span>
+            <motion.div
+              animate={{ y: [0, 8, 0] }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+            >
+              <ChevronDown className="w-4 h-4 text-white/30" />
+            </motion.div>
+          </motion.div>
+        </motion.div>
       </section>
 
-      {/* ── Features List ── */}
-      <section className="py-24 bg-slate-50 border-y border-slate-100">
-        <div className="max-w-[1200px] mx-auto px-6 lg:px-8">
-          <div className="grid md:grid-cols-3 gap-12">
-            <div className="flex flex-col gap-4">
-              <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center text-white mb-2 shadow-lg shadow-primary/20">
-                <Shield className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-heading font-bold text-slate-900">Ironclad Security</h3>
-              <p className="text-slate-600 leading-relaxed">
-                Military-grade encryption for all student passes. Passes are tied to specific sessions and expire automatically.
-              </p>
-            </div>
-            <div className="flex flex-col gap-4">
-              <div className="w-12 h-12 rounded-xl bg-success flex items-center justify-center text-white mb-2 shadow-lg shadow-success/20">
-                <Zap className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-heading font-bold text-slate-900">Instant Processing</h3>
-              <p className="text-slate-600 leading-relaxed">
-                Scan and verify in under 300 milliseconds. Reduce hall entry times by up to 80% compared to manual checks.
-              </p>
-            </div>
-            <div className="flex flex-col gap-4">
-              <div className="w-12 h-12 rounded-xl bg-slate-900 flex items-center justify-center text-white mb-2 shadow-lg shadow-slate-900/20">
-                <Lock className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-heading font-bold text-slate-900">Verified Payments</h3>
-              <p className="text-slate-600 leading-relaxed">
-                Direct integration with Remita ensures only students who have completed fee payments receive an exam pass.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Before & After Comparison ── */}
-      <section className="py-24 bg-white overflow-hidden">
-        <div className="max-w-[1200px] mx-auto px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-20">
-            <h2 className="text-3xl lg:text-5xl font-heading font-bold text-slate-900 mb-6 tracking-tight">
-              Transforming Exam Management
+      {/* ═══════════════════════════════════════════
+          FEATURES — Clean, warm background
+          ═══════════════════════════════════════════ */}
+      <section className="section-padding bg-parchment relative">
+        <div className="section-container">
+          <Reveal>
+            <p className="text-label uppercase text-stone font-body font-semibold tracking-widest mb-4">Why ExamVerify</p>
+          </Reveal>
+          <Reveal delay={0.1}>
+            <h2 className="text-display-sm lg:text-display-md font-heading font-bold text-anthracite mb-20 max-w-2xl">
+              Built for institutions that take{' '}
+              <span className="text-editorial text-primary">security seriously</span>
             </h2>
-            <p className="text-lg text-slate-600">
-              Moving from manual vulnerabilities to digital certainty. Our system replaces guesswork with data-backed verification.
-            </p>
-          </div>
+          </Reveal>
 
-          <div className="grid lg:grid-cols-2 gap-8 items-stretch">
-            <div className="card-premium bg-slate-50 flex flex-col items-center text-center">
-              <span className="badge-premium bg-slate-200 text-slate-600 mb-6">Traditional Protocol</span>
-              <div className="rounded-xl overflow-hidden mb-8 shadow-sm">
-                <img src={heroMockups.comparison} alt="Manual Process" className="w-full grayscale h-48 object-cover opacity-50" />
-              </div>
-              <h4 className="text-xl font-bold mb-4 text-slate-700">Manual ID Checking</h4>
-              <ul className="text-slate-500 space-y-3 text-sm">
-                <li>• Subject to human error and oversight</li>
-                <li>• Easy impersonation using fake IDs</li>
-                <li>• Long queues and entry delays</li>
-                <li>• No digital audit trail</li>
-              </ul>
+          <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
+            {features.map((feature, i) => {
+              const Icon = feature.icon;
+              return (
+                <Reveal key={i} delay={i * 0.1}>
+                  <div className="group">
+                    <div className={`w-14 h-14 rounded-xl ${feature.accent} flex items-center justify-center text-white mb-6 transition-transform duration-500 group-hover:scale-110`}>
+                      <Icon className="w-6 h-6" />
+                    </div>
+                    <h3 className="text-heading-sm font-heading font-bold text-anthracite mb-3">{feature.title}</h3>
+                    <p className="text-body-md text-stone leading-relaxed">{feature.description}</p>
+                  </div>
+                </Reveal>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      <div className="section-divider" />
+
+      {/* ═══════════════════════════════════════════
+          PROCESS — How it works, editorial style
+          ═══════════════════════════════════════════ */}
+      <section className="section-padding bg-cream relative">
+        <div className="section-container">
+          <div className="flex flex-col lg:flex-row gap-20">
+            {/* Left heading */}
+            <div className="lg:w-2/5 lg:sticky lg:top-32 lg:self-start">
+              <Reveal>
+                <p className="text-label uppercase text-stone font-body font-semibold tracking-widest mb-4">Process</p>
+              </Reveal>
+              <Reveal delay={0.1}>
+                <h2 className="text-display-sm lg:text-display-md font-heading font-bold text-anthracite mb-6">
+                  From registration to{' '}
+                  <span className="text-editorial text-primary">hall entry</span>
+                </h2>
+              </Reveal>
+              <Reveal delay={0.2}>
+                <p className="text-body-lg text-stone leading-relaxed mb-8">
+                  A streamlined four-step process that replaces manual ID checking with cryptographic certainty.
+                </p>
+              </Reveal>
+              <Reveal delay={0.3}>
+                <Link to="/auth/signup?role=student" className="btn-primary group inline-flex">
+                  Start Now
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </Link>
+              </Reveal>
             </div>
 
-            <div className="card-premium border-primary/20 bg-primary/[0.02] flex flex-col items-center text-center relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-4">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                  <CheckCircle className="w-5 h-5 text-primary" />
-                </div>
-              </div>
-              <span className="badge-primary mb-6">Digital Ecosystem</span>
-              <div className="rounded-xl overflow-hidden mb-8 shadow-md border-2 border-primary/10">
-                <img src={heroMockups.success} alt="Digital Verification" className="w-full h-48 object-cover" />
-              </div>
-              <h4 className="text-xl font-bold mb-4 text-primary">Biometric-linked QR Passes</h4>
-              <ul className="text-primary/70 space-y-3 text-sm">
-                <li className="flex items-center gap-2 justify-center"><CheckCircle className="w-4 h-4" /> Triple-factor authentication</li>
-                <li className="flex items-center gap-2 justify-center"><CheckCircle className="w-4 h-4" /> Tamper-proof digital signatures</li>
-                <li className="flex items-center gap-2 justify-center"><CheckCircle className="w-4 h-4" /> Zero-queue hall entry</li>
-                <li className="flex items-center gap-2 justify-center"><CheckCircle className="w-4 h-4" /> Live attendance audit</li>
-              </ul>
+            {/* Right steps */}
+            <div className="lg:w-3/5 space-y-0">
+              {processSteps.map((step, i) => (
+                <Reveal key={i} delay={i * 0.1}>
+                  <div className="group flex gap-6 py-10 border-t border-slate-200 first:border-t-0 lg:first:border-t">
+                    <span className="text-display-sm font-heading font-bold text-slate-200 group-hover:text-primary transition-colors duration-500 shrink-0">
+                      {step.number}
+                    </span>
+                    <div>
+                      <h3 className="text-heading-md font-heading font-bold text-anthracite mb-2 group-hover:text-primary transition-colors duration-300">
+                        {step.title}
+                      </h3>
+                      <p className="text-body-md text-stone leading-relaxed">{step.description}</p>
+                    </div>
+                  </div>
+                </Reveal>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── Examiner Portal Feature ── */}
-      <section className="py-24 bg-slate-950 text-white overflow-hidden relative">
-        <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-primary/10 to-transparent pointer-events-none" />
-
-        <div className="max-w-[1200px] mx-auto px-6 lg:px-8">
-          <div className="flex flex-col lg:flex-row items-center gap-20">
-            <div className="lg:w-1/2 order-2 lg:order-1">
-              <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-white/10 group">
-                <img src={heroMockups.scanning} alt="Examiner Scanning" className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-700" />
-                <div className="absolute inset-0 bg-primary/20 mix-blend-overlay" />
-              </div>
-            </div>
-
-            <div className="lg:w-1/2 order-1 lg:order-2">
-              <span className="badge-success mb-6">For Institution Staff</span>
-              <h2 className="text-3xl lg:text-5xl font-heading font-bold mb-8 leading-tight">
-                Simplified Hall <br />
-                <span className="text-success">Supervision</span>
+      {/* ═══════════════════════════════════════════
+          COMPARISON — Before & After, side by side
+          ═══════════════════════════════════════════ */}
+      <section className="section-padding bg-parchment relative overflow-hidden">
+        <div className="section-container">
+          <div className="text-center max-w-3xl mx-auto mb-20">
+            <Reveal>
+              <p className="text-label uppercase text-stone font-body font-semibold tracking-widest mb-4">Transformation</p>
+            </Reveal>
+            <Reveal delay={0.1}>
+              <h2 className="text-display-sm lg:text-display-md font-heading font-bold text-anthracite mb-6">
+                From manual vulnerabilities to{' '}
+                <span className="text-editorial text-primary">digital certainty</span>
               </h2>
-              <p className="text-slate-400 text-lg mb-10 leading-relaxed">
-                The Examiner Portal provides a high-performance scanning interface that works on any smartphone. No special hardware required.
-              </p>
+            </Reveal>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-6 items-stretch">
+            <Reveal>
+              <div className="card-premium bg-slate-50 h-full flex flex-col items-center text-center">
+                <span className="badge-premium bg-slate-200 text-slate-500 mb-6">Traditional Protocol</span>
+                <div className="img-reveal w-full mb-8">
+                  <img src={heroMockups.comparison} alt="Manual process" className="w-full h-48 object-cover grayscale opacity-50 rounded-xl" />
+                </div>
+                <h4 className="text-heading-sm font-heading font-bold text-slate-700 mb-4">Manual ID Checking</h4>
+                <ul className="text-stone space-y-3 text-body-sm">
+                  <li>Subject to human error and oversight</li>
+                  <li>Easy impersonation using fake IDs</li>
+                  <li>Long queues and entry delays</li>
+                  <li>No digital audit trail</li>
+                </ul>
+              </div>
+            </Reveal>
+
+            <Reveal delay={0.15}>
+              <div className="card-premium border-primary/20 bg-primary/[0.02] h-full flex flex-col items-center text-center relative overflow-hidden">
+                <div className="absolute top-4 right-4">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    <CheckCircle className="w-5 h-5 text-primary" />
+                  </div>
+                </div>
+                <span className="badge-primary mb-6">Digital Ecosystem</span>
+                <div className="img-reveal w-full mb-8 border-2 border-primary/10 rounded-xl">
+                  <img src={heroMockups.success} alt="Digital verification" className="w-full h-48 object-cover rounded-xl" />
+                </div>
+                <h4 className="text-heading-sm font-heading font-bold text-primary mb-4">Biometric-linked QR Passes</h4>
+                <ul className="text-primary/70 space-y-3 text-body-sm">
+                  <li className="flex items-center gap-2 justify-center"><CheckCircle className="w-4 h-4 shrink-0" /> Triple-factor authentication</li>
+                  <li className="flex items-center gap-2 justify-center"><CheckCircle className="w-4 h-4 shrink-0" /> Tamper-proof digital signatures</li>
+                  <li className="flex items-center gap-2 justify-center"><CheckCircle className="w-4 h-4 shrink-0" /> Zero-queue hall entry</li>
+                  <li className="flex items-center gap-2 justify-center"><CheckCircle className="w-4 h-4 shrink-0" /> Live attendance audit</li>
+                </ul>
+              </div>
+            </Reveal>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════
+          EXAMINER SECTION — Dark, immersive
+          ═══════════════════════════════════════════ */}
+      <section className="section-padding-lg bg-ink text-white overflow-hidden relative">
+        <div className="absolute inset-0 noise-overlay" />
+        <div className="absolute bottom-0 left-0 w-full h-1/3 bg-gradient-to-t from-primary/[0.06] to-transparent pointer-events-none" />
+
+        <div className="section-container relative z-10">
+          <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-20">
+            {/* Image */}
+            <Reveal className="lg:w-1/2 order-2 lg:order-1">
+              <div className="img-reveal rounded-2xl border border-white/[0.06] shadow-premium-lg overflow-hidden">
+                <img
+                  src={heroMockups.scanning}
+                  alt="Examiner scanning student QR code"
+                  className="w-full h-auto object-cover"
+                />
+                <div className="absolute inset-0 bg-primary/10 mix-blend-overlay pointer-events-none" />
+              </div>
+            </Reveal>
+
+            {/* Text */}
+            <div className="lg:w-1/2 order-1 lg:order-2">
+              <Reveal>
+                <span className="badge-success mb-6 inline-flex">For Institution Staff</span>
+              </Reveal>
+              <Reveal delay={0.1}>
+                <h2 className="text-display-sm lg:text-display-md font-heading font-bold mb-8 leading-tight">
+                  Simplified Hall{' '}
+                  <span className="text-editorial text-success-light">Supervision</span>
+                </h2>
+              </Reveal>
+              <Reveal delay={0.2}>
+                <p className="text-body-lg text-white/40 mb-10 leading-relaxed">
+                  The Examiner Portal provides a high-performance scanning interface that works on any smartphone. No special hardware required.
+                </p>
+              </Reveal>
 
               <div className="space-y-6 mb-12">
-                <div className="flex items-start gap-4">
-                  <div className="w-6 h-6 rounded bg-success/20 flex items-center justify-center text-success shrink-0 mt-1">
-                    <CheckCircle className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <p className="font-bold text-white">Live Attendance Count</p>
-                    <p className="text-sm text-slate-500">Track exactly how many students are in the hall in real-time.</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-4">
-                  <div className="w-6 h-6 rounded bg-success/20 flex items-center justify-center text-success shrink-0 mt-1">
-                    <CheckCircle className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <p className="font-bold text-white">Fraud Alerts</p>
-                    <p className="text-sm text-slate-500">Instant notification if a pass is reused or expired.</p>
-                  </div>
-                </div>
+                {[
+                  { title: 'Live Attendance Count', desc: 'Track exactly how many students are in the hall in real-time.' },
+                  { title: 'Fraud Alerts', desc: 'Instant notification if a pass is reused or expired.' },
+                  { title: 'Offline Capable', desc: 'Continues to verify passes even with spotty connectivity.' },
+                ].map((item, i) => (
+                  <Reveal key={i} delay={0.3 + i * 0.1}>
+                    <div className="flex items-start gap-4">
+                      <div className="w-6 h-6 rounded bg-success/20 flex items-center justify-center text-success shrink-0 mt-0.5">
+                        <CheckCircle className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <p className="font-body font-semibold text-white mb-1">{item.title}</p>
+                        <p className="text-body-sm text-white/40">{item.desc}</p>
+                      </div>
+                    </div>
+                  </Reveal>
+                ))}
               </div>
 
-              <Link to="/auth/login?role=examiner" className="btn-success group">
-                Access Examiner Portal
-                <ExternalLink className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-              </Link>
+              <Reveal delay={0.6}>
+                <Link to="/auth/login?role=examiner" className="btn-success group inline-flex">
+                  Access Examiner Portal
+                  <ExternalLink className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                </Link>
+              </Reveal>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── Trust Section ── */}
-      <section className="py-20 bg-white">
-        <div className="max-w-[1200px] mx-auto px-6 lg:px-8 text-center">
-          <p className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-12 italic">Join 10,000+ Students Already Verified</p>
-          <div className="flex flex-wrap justify-center gap-12 opacity-40 grayscale contrast-125">
-            {/* These would be university logos, using placeholder names for now */}
-            <span className="text-2xl font-heading font-black">UNILAG</span>
-            <span className="text-2xl font-heading font-black">UNIBEN</span>
-            <span className="text-2xl font-heading font-black">OAU</span>
-            <span className="text-2xl font-heading font-black">ABU</span>
-            <span className="text-2xl font-heading font-black">UI</span>
-          </div>
+      {/* ═══════════════════════════════════════════
+          TRUST BAR
+          ═══════════════════════════════════════════ */}
+      <section className="py-16 bg-parchment">
+        <div className="section-container text-center">
+          <Reveal>
+            <p className="text-label font-body font-semibold uppercase tracking-widest text-stone mb-10">
+              Trusted by 10,000+ students across
+            </p>
+          </Reveal>
+          <Reveal delay={0.1}>
+            <div className="flex flex-wrap justify-center gap-x-14 gap-y-4 opacity-30">
+              {['UNILAG', 'UNIBEN', 'OAU', 'ABU', 'UI'].map((name) => (
+                <span key={name} className="text-2xl font-heading font-bold text-anthracite">{name}</span>
+              ))}
+            </div>
+          </Reveal>
         </div>
       </section>
 
-      {/* ── Footer CTA ── */}
-      <section className="py-24 bg-primary text-white text-center rounded-t-[40px] lg:rounded-t-[80px]">
-        <div className="max-w-4xl mx-auto px-6 lg:px-8">
-          <GraduationCap className="w-16 h-16 mx-auto mb-8 opacity-50" />
-          <h2 className="text-4xl lg:text-6xl font-heading font-bold mb-8">Ready to secure <br /> your next session?</h2>
-          <p className="text-primary-light text-xl mb-12 leading-relaxed opacity-80">
-            Automate hall entry, eliminate fraud, and create a better experience for students and staff alike.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-6 justify-center">
-            <Link to="/auth/signup?role=student" className="px-10 py-5 bg-white text-primary font-bold rounded-xl hover:bg-slate-50 transition-colors text-lg">
-              Start as Student
-            </Link>
-            <Link to="/auth/signup?role=examiner" className="px-10 py-5 bg-primary-dark text-white border border-white/20 font-bold rounded-xl hover:bg-primary-dark/50 transition-colors text-lg">
-              Partner as Examiner
-            </Link>
-          </div>
+      {/* ═══════════════════════════════════════════
+          FOOTER CTA — Bold, rounded top
+          ═══════════════════════════════════════════ */}
+      <section className="py-24 lg:py-32 bg-primary text-white text-center rounded-t-[48px] lg:rounded-t-[80px] relative overflow-hidden">
+        <div className="absolute inset-0 noise-overlay" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-white/[0.06] rounded-full blur-[120px] pointer-events-none" />
+
+        <div className="max-w-3xl mx-auto px-6 lg:px-8 relative z-10">
+          <Reveal>
+            <GraduationCap className="w-12 h-12 mx-auto mb-8 text-white/30" />
+          </Reveal>
+          <Reveal delay={0.1}>
+            <h2 className="text-display-sm lg:text-display-md font-heading font-bold mb-8">
+              Ready to secure your next session?
+            </h2>
+          </Reveal>
+          <Reveal delay={0.2}>
+            <p className="text-body-lg text-white/60 mb-12 leading-relaxed max-w-xl mx-auto">
+              Automate hall entry, eliminate fraud, and create a better experience for students and staff alike.
+            </p>
+          </Reveal>
+          <Reveal delay={0.3}>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link to="/auth/signup?role=student" className="px-10 py-4 bg-white text-primary font-body font-bold rounded-xl hover:bg-white/90 transition-all text-base shadow-lg">
+                Start as Student
+              </Link>
+              <Link to="/auth/signup?role=examiner" className="px-10 py-4 bg-primary-dark text-white border border-white/20 font-body font-bold rounded-xl hover:bg-white/10 transition-all text-base">
+                Partner as Examiner
+              </Link>
+            </div>
+          </Reveal>
         </div>
       </section>
     </div>
   );
 }
-
