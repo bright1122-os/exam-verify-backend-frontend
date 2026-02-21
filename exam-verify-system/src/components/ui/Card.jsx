@@ -10,13 +10,13 @@ export const Card = ({
   const Wrapper = hover ? motion.div : 'div';
 
   const hoverProps = hover ? {
-    whileHover: { y: -2 },
-    transition: { duration: 0.15 },
+    whileHover: { y: -4 },
+    transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] },
   } : {};
 
   return (
     <Wrapper
-      className={`bg-white border border-parchment-dark rounded-lg p-6 ${hover ? 'cursor-pointer' : ''} ${className}`}
+      className={`bg-white border border-slate-100 rounded-2xl p-6 shadow-premium transition-shadow duration-500 ${hover ? 'cursor-pointer hover:shadow-premium-hover' : ''} ${className}`}
       onClick={onClick}
       {...hoverProps}
       {...props}
