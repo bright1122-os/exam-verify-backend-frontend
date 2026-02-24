@@ -157,6 +157,7 @@ export default function ScanPortal() {
     if (!student.registration_complete) throw new Error('Student registration incomplete.');
     if (!student.payment_verified) throw new Error('Student fees NOT verified.');
     if (!student.qr_generated) throw new Error('Exam pass not generated.');
+    if (student.qr_used) throw new Error('This exam pass has already been used for entry.');
 
     setResult({
       success: true,
@@ -189,6 +190,14 @@ export default function ScanPortal() {
         });
 
       if (error) throw error;
+
+      // Mark the exam pass as used — prevents replay by any examiner
+      const { error: updateError } = await supabase
+        .from('students')
+        .update({ qr_used: true })
+        .eq('id', result.student.id);
+
+      if (updateError) throw updateError;
 
       toast.success('Student approved!');
       resetScan();

@@ -6,6 +6,12 @@ import mongoSanitize from 'express-mongo-sanitize';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import authRoutes from './routes/auth.js';
+import studentRoutes from './routes/student.js';
+import paymentRoutes from './routes/payment.js';
+import qrRoutes from './routes/qr.js';
+import examinerRoutes from './routes/examiner.js';
+import adminRoutes from './routes/admin.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -37,12 +43,6 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // ── Routes ──
-import authRoutes from './routes/auth.js';
-import studentRoutes from './routes/student.js';
-import paymentRoutes from './routes/payment.js';
-import qrRoutes from './routes/qr.js';
-import examinerRoutes from './routes/examiner.js';
-import adminRoutes from './routes/admin.js';
 
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/student', studentRoutes);

@@ -114,6 +114,71 @@ Unknown — could be a leftover from an earlier version that used Supabase, or i
 
 ---
 
+## Lesson 005 — Bug Reports Written for Wrong Architecture
+
+**Discovered:** 2026-02-24 (session 2 — bug audit)
+
+**Mistake Pattern:**
+4 of 7 reported bugs (Bugs 1, 2, 3, 4) were written assuming a MongoDB/Express/JWT frontend flow. The actual frontend uses Supabase Auth + Supabase PostgreSQL. Bug descriptions referenced patterns that don't exist in the code.
+
+**Root Cause:**
+EXAMVERIFY_DOCUMENTATION.md describes a MongoDB-only architecture. The actual implementation evolved to use Supabase for the frontend. Bug reports were written against the documented architecture, not the actual code.
+
+**Impact:**
+Risk of "fixing" correct code and introducing regressions while investigating non-existent bugs.
+
+**Prevention Rule:**
+- Always read actual source files before accepting a bug description as valid.
+- Check `src/store/useStore.js` imports to identify the actual auth/data layer.
+- Don't trust architecture documentation without verifying against actual imports and function calls.
+- Run `grep -r "supabase\|axios\|fetch" src/` to quickly identify the real data layer.
+
+**How to Detect:**
+- Verify actual imports in store, lib/, and services/ before debugging data-layer issues.
+
+---
+
+## Lesson 006 — Missing React Hook Import Crashes Entire Page
+
+**Discovered:** 2026-02-24 (session 2 — bug audit)
+
+**Mistake Pattern:**
+`Register.jsx` used `useEffect` on line 38 but imported only `useState, useRef` on line 1. `updateStudentData` was called from `useStore` but was not defined there. Both would cause runtime crashes.
+
+**Root Cause:**
+Files built incrementally — hooks/store actions added later without updating imports/store definitions.
+
+**Prevention Rule:**
+- When adding a hook call, immediately verify the import line includes it.
+- When destructuring a store action, verify the action is defined in the store.
+- Cross-check all `useStore()` destructured items against the store's actual exported actions.
+
+**How to Detect:**
+- `grep -n "useEffect\|useCallback\|useMemo" file.jsx` then verify it appears in the import statement.
+- For store actions: compare destructured names in components against actual useStore definitions.
+
+---
+
+## Lesson 007 — QR Replay Vulnerability: State Transition Must Be Atomic with Side Effect
+
+**Discovered:** 2026-02-24 (session 2 — bug audit)
+
+**Mistake Pattern:**
+`ScanPortal.jsx` `handleApprove()` inserted a verification record but never marked `qr_used=true` on the student. `verifyStudent()` also never checked `qr_used`. A student could be approved multiple times by different examiners.
+
+**Root Cause:**
+The approval flow was implemented in two steps (insert verification, update student) but the second step was omitted.
+
+**Prevention Rule:**
+- For any "mark as used" flow: the state transition MUST accompany the side effect (both insert + update).
+- Always ask: "What prevents this action from being repeated?" when implementing approval flows.
+- After any approval: the source resource must be marked consumed/used in the same operation.
+
+**How to Detect:**
+- Search for `insert` on audit/verification tables without a corresponding `update` on the source record.
+
+---
+
 ## Template for New Lessons
 
 ```
