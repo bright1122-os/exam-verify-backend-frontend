@@ -225,6 +225,7 @@ bright1122-os/ (profile repo, branch: claude/project-handoff-setup-v6pY4)
 | payment_verified | BOOLEAN | Set true after Remita verification |
 | qr_generated | BOOLEAN | Set true when payment verified (payment verification endpoint sets both) |
 | qr_used | BOOLEAN | Set true when QR approved by examiner ← added in Bug 5 fix |
+| qr_used_at | TIMESTAMPTZ | Timestamp of QR approval ← added in Session 3 migration |
 | created_at | TIMESTAMP | Auto |
 
 ### Table: `payments`
@@ -369,9 +370,51 @@ bright1122-os/ (profile repo, branch: claude/project-handoff-setup-v6pY4)
 
 ---
 
+## CI/CD Workflows (GitHub Actions)
+
+| Workflow | File | Trigger | Purpose |
+|----------|------|---------|---------|
+| Deploy Supabase Edge Functions | `.github/workflows/deploy-supabase.yml` | Push to `main` (supabase/functions/** changed) | Deploys `verify-payment` Edge Function |
+| Run DB Migrations | `.github/workflows/run-migrations.yml` | Push to `main` (supabase/migrations/** changed) OR manual | Applies SQL migrations via Supabase Management API |
+| Configure Vercel Env Vars | `.github/workflows/configure-vercel-env.yml` | Manual (`workflow_dispatch`) | Sets all required Vercel env vars; auto-generates JWT_SECRET, QR_ENCRYPTION_KEY, VITE_QR_SECRET_KEY if not supplied |
+
+### GitHub Secrets Required (add at: repo → Settings → Secrets and variables → Actions)
+
+| Secret | Purpose | Required By |
+|--------|---------|-------------|
+| `SUPABASE_ACCESS_TOKEN` | Supabase Management API auth | run-migrations.yml, deploy-supabase.yml |
+| `VERCEL_TOKEN` | Vercel API auth | configure-vercel-env.yml |
+| `VITE_SUPABASE_ANON_KEY` | Supabase public key value | configure-vercel-env.yml |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase admin key value | configure-vercel-env.yml |
+| `REMITA_SECRET_KEY` | Remita payment secret value | configure-vercel-env.yml |
+| `MONGODB_URI` | MongoDB connection string (optional — for Express server) | configure-vercel-env.yml |
+| `CLIENT_URL` | Frontend deployment URL (optional) | configure-vercel-env.yml |
+| `JWT_SECRET` | JWT signing key (optional — auto-generated if blank) | configure-vercel-env.yml |
+| `QR_ENCRYPTION_KEY` | QR signing key (optional — auto-generated if blank) | configure-vercel-env.yml |
+| `VITE_QR_SECRET_KEY` | Frontend AES-256 QR key (optional — auto-generated if blank) | configure-vercel-env.yml |
+
+### Supabase Project Info
+| Field | Value |
+|-------|-------|
+| Project Ref / ID | `ifpvklpkmokiagmxcsjq` |
+| Project URL | `https://ifpvklpkmokiagmxcsjq.supabase.co` |
+| Anon Key Prefix | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ...anon...` (set as `VITE_SUPABASE_ANON_KEY` in Vercel) |
+| Service Role Prefix | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ...service_role...` (set as `SUPABASE_SERVICE_ROLE_KEY` in Vercel) |
+
+> **NOTE:** The Supabase project was changed in Session 4 (old project: `gwyxyncowfinfcudjwpv` → new: `ifpvklpkmokiagmxcsjq`). Run the SQL migration `20260225000001_complete_schema.sql` in the new project's SQL Editor before going live.
+
+### Vercel Project Info
+| Field | Value |
+|-------|-------|
+| Project ID | `prj_ZeYQULfvJvpdlJ1McONSdMoYA00G` |
+
+---
+
 ## Changelog
 
 | Date | Session | Changes |
 |------|---------|---------|
 | 2026-02-24 | Session 1 | Initial project setup, frontend + backend scaffolding, Supabase integration, Anthropic design system |
 | 2026-02-24 | Session 2 | Created claude.md, agent.md, tasks/; validated 7 reported bugs (4 misdiagnosed, 3 real); fixed Register.jsx (useEffect import + updateStudentData), ScanPortal.jsx (QR replay), server/src/app.js (ESM import order); removed vercel.json hardcoded secrets; documented full architecture reality |
+| 2026-02-24 | Session 3 | Created supabase/migrations/ with SQL migration for qr_used column; created GitHub Actions workflows: run-migrations.yml (Supabase DB via Management API) and configure-vercel-env.yml (sets all Vercel env vars, auto-generates JWT/QR secrets); documented Supabase project ref, Vercel project ID, required GitHub Secrets |
+| 2026-02-25 | Session 4 | **New Supabase project** (`ifpvklpkmokiagmxcsjq`). Created `20260225000001_complete_schema.sql` — full schema: all 4 tables + RLS policies + photos storage bucket + `handle_new_user` trigger. Fixed Google OAuth: `GoogleLoginButton.jsx` was redirecting to Express backend — now uses `supabase.auth.signInWithOAuth`. Fixed `AuthCallback.jsx` race condition (null `userType` fired redirect before `fetchProfile` completed). Redesigned `Register.jsx` to match Login/SignUp split-panel premium design. Fixed `App.jsx` `bg-slate-50` → `bg-parchment`. Updated GitHub Actions workflows to target new Supabase project ID. Remita test SK/PK provided by user — set as `REMITA_SECRET_KEY` env var in Vercel. |

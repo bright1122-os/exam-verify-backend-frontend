@@ -57,7 +57,7 @@ function App() {
 
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-slate-50 transition-colors">
+      <div className="min-h-screen bg-parchment transition-colors">
         <Navbar />
 
         <Routes>

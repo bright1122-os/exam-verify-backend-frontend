@@ -179,6 +179,73 @@ The approval flow was implemented in two steps (insert verification, update stud
 
 ---
 
+## Lesson 008 — New Supabase Project = No Tables (Everything Breaks)
+
+**Discovered:** 2026-02-25 (session 4 — production setup)
+
+**Mistake Pattern:**
+When a new Supabase project is created (`ifpvklpkmokiagmxcsjq`), NONE of the required tables (profiles, students, payments, verifications) or storage buckets exist. ALL database operations fail silently as "database failed" errors even though the code is correct.
+
+**Root Cause:**
+The old migration only added the `qr_used` column (ALTER TABLE), assuming the base tables existed. Switching to a new project requires a full schema creation migration.
+
+**Impact:**
+- Image upload fails ("database failed") — storage bucket doesn't exist
+- Student record insert fails — `students` table doesn't exist
+- Profile lookup fails — `profiles` table doesn't exist
+- All auth-dependent flows silently break
+
+**Prevention Rule:**
+- Whenever the Supabase project changes, create a `00_complete_schema.sql` migration that creates ALL tables from scratch using `CREATE TABLE IF NOT EXISTS`
+- The migration must include: tables, RLS policies, storage buckets, and the `handle_new_user` trigger
+- Document the project ID in `claude.md` and verify it matches in every workflow file
+
+**How to Detect:**
+- `grep -r "gwyxyncowfinfcudjwpv\|ifpvklpkmokiagmxcsjq" .github/` — confirm workflow project IDs match the active project
+- Check `claude.md` Supabase Project Info section for the current project ID
+- If any Supabase operation returns "relation does not exist" → run the complete schema migration
+
+---
+
+## Lesson 009 — Google OAuth redirect_uri_mismatch Is Always Config, Not Code
+
+**Discovered:** 2026-02-25 (session 4)
+
+**Mistake Pattern:**
+`Error 400: redirect_uri_mismatch` during Google OAuth is ALWAYS a Supabase + Google Cloud Console configuration problem, not a frontend code bug. Trying to fix it by changing `redirectTo` in the code does not solve it.
+
+**Root Cause:**
+Google's OAuth requires the EXACT redirect URI to be whitelisted in Google Cloud Console. Supabase uses `https://[project-ref].supabase.co/auth/v1/callback` as the redirect URI — this exact string must be in Google's allowed list.
+
+**Prevention Rule:**
+After ANY Supabase project change, immediately update Google Cloud Console → OAuth Client → Authorized redirect URIs to `https://[new-project-ref].supabase.co/auth/v1/callback`
+
+**How to Detect:**
+- Error message "redirect_uri_mismatch" in browser → always check Google Cloud Console authorized URIs
+- After a project ID change: `grep` for old project ref in `claude.md`, workflows, and Supabase Auth settings
+
+---
+
+## Lesson 010 — Race Condition: useEffect on Zustand State Fires Before Async Fetch
+
+**Discovered:** 2026-02-25 (session 4)
+
+**Mistake Pattern:**
+`AuthCallback.jsx` had a `useEffect([userType])` that checked `userType === null` and redirected to `/`. Since `userType` starts as `null` in the Zustand store, this effect fired IMMEDIATELY on mount — before `fetchProfile()` could complete — causing all Google OAuth users to be redirected to `/` instead of their dashboard.
+
+**Root Cause:**
+React's `useEffect` runs synchronously after render. If Zustand state has a falsy initial value (`null`) and a useEffect checks that value, it will fire on the first render before any async operation updates the state.
+
+**Prevention Rule:**
+- Never trigger navigation based on a Zustand value that starts as `null` without a `isProcessing` guard
+- Pattern: add a local `isProcessing` state, start as `true`, set to `false` in the `finally` block of the async operation, and gate all redirections behind `if (isProcessing) return`
+
+**How to Detect:**
+- Any `useEffect([someStoreValue])` that navigates when `someStoreValue === null` is a potential race condition
+- If a callback/redirect page immediately redirects without completing the intended operation → check for this pattern
+
+---
+
 ## Template for New Lessons
 
 ```

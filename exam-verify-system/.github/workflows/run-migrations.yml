@@ -1,0 +1,85 @@
+name: Run Supabase Database Migrations
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'supabase/migrations/**'
+  workflow_dispatch:
+    inputs:
+      migration_file:
+        description: 'Specific migration file to run (optional, leave blank for all pending)'
+        required: false
+        default: ''
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    name: Apply database migrations
+
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PROJECT_REF: ifpvklpkmokiagmxcsjq
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Apply migrations via Management API
+        run: |
+          echo "Applying Supabase database migrations..."
+
+          # Run each SQL migration file via Management API
+          # This is more reliable than supabase db push for CI environments
+          for sql_file in supabase/migrations/*.sql; do
+            echo "Running migration: $sql_file"
+            SQL_CONTENT=$(cat "$sql_file")
+
+            RESPONSE=$(curl -sf -w "\n%{http_code}" \
+              -X POST "https://api.supabase.com/v1/projects/${PROJECT_REF}/database/query" \
+              -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "$(jq -n --arg query "$SQL_CONTENT" '{"query": $query}')")
+
+            HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+            BODY=$(echo "$RESPONSE" | head -n -1)
+
+            if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "201" ]; then
+              echo "✓ Migration applied: $sql_file"
+            else
+              echo "✗ Migration failed: $sql_file (HTTP $HTTP_CODE)"
+              echo "Response: $BODY"
+              exit 1
+            fi
+          done
+
+          echo "All migrations applied successfully."
+
+      - name: Verify schema tables exist
+        run: |
+          echo "Verifying migration: checking all required tables..."
+
+          RESPONSE=$(curl -sf \
+            -X POST "https://api.supabase.com/v1/projects/${PROJECT_REF}/database/query" \
+            -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d '{"query": "SELECT table_name FROM information_schema.tables WHERE table_schema = '"'"'public'"'"' AND table_name IN ('"'"'profiles'"'"','"'"'students'"'"','"'"'payments'"'"','"'"'verifications'"'"') ORDER BY table_name;"}')
+
+          echo "Table check result: $RESPONSE"
+
+          for TABLE in profiles students payments verifications; do
+            if echo "$RESPONSE" | grep -q "$TABLE"; then
+              echo "✓ Table confirmed: $TABLE"
+            else
+              echo "✗ Table missing: $TABLE — migration may have failed"
+              exit 1
+            fi
+          done
+
+          echo "✓ Verification passed: all required tables confirmed."

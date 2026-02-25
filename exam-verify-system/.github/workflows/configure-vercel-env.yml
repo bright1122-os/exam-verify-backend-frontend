@@ -1,0 +1,185 @@
+name: Configure Vercel Environment Variables
+
+# Run manually from GitHub Actions tab after adding required GitHub Secrets
+# Required GitHub Secrets (add at: Settings → Secrets and variables → Actions):
+#   VERCEL_TOKEN          - Vercel personal access token
+#   VITE_SUPABASE_ANON_KEY - Supabase anon/public key
+#   SUPABASE_SERVICE_ROLE_KEY - Supabase service role key (admin access)
+#   REMITA_SECRET_KEY     - Remita API secret key
+#   MONGODB_URI           - MongoDB connection string (if using Express server)
+#   JWT_SECRET            - JWT signing secret (64+ chars). Leave blank to auto-generate.
+#   QR_ENCRYPTION_KEY     - QR signing key (32+ chars). Leave blank to auto-generate.
+#   VITE_QR_SECRET_KEY    - Frontend AES-256 QR key. Leave blank to auto-generate.
+#   CLIENT_URL            - Frontend URL (e.g. https://your-app.vercel.app)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  configure:
+    runs-on: ubuntu-latest
+    name: Set all Vercel environment variables
+
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_PROJECT_ID: prj_ZeYQULfvJvpdlJ1McONSdMoYA00G
+
+    steps:
+      - name: Verify required secrets are present
+        run: |
+          MISSING=""
+          [ -z "${{ secrets.VERCEL_TOKEN }}" ]             && MISSING="$MISSING VERCEL_TOKEN"
+          [ -z "${{ secrets.VITE_SUPABASE_ANON_KEY }}" ]  && MISSING="$MISSING VITE_SUPABASE_ANON_KEY"
+          [ -z "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" ] && MISSING="$MISSING SUPABASE_SERVICE_ROLE_KEY"
+          [ -z "${{ secrets.REMITA_SECRET_KEY }}" ]        && MISSING="$MISSING REMITA_SECRET_KEY"
+          if [ -n "$MISSING" ]; then
+            echo "✗ Missing required GitHub Secrets:$MISSING"
+            echo "Add them at: GitHub repo → Settings → Secrets and variables → Actions"
+            exit 1
+          fi
+          echo "✓ All required secrets are present"
+
+      - name: Set environment variables in Vercel
+        env:
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          REMITA_SECRET_KEY: ${{ secrets.REMITA_SECRET_KEY }}
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          JWT_SECRET_INPUT: ${{ secrets.JWT_SECRET }}
+          QR_ENCRYPTION_KEY_INPUT: ${{ secrets.QR_ENCRYPTION_KEY }}
+          VITE_QR_SECRET_KEY_INPUT: ${{ secrets.VITE_QR_SECRET_KEY }}
+          CLIENT_URL: ${{ secrets.CLIENT_URL }}
+        run: |
+          # ── Helper: upsert an env var in Vercel ──────────────────────────────────
+          # Creates it if new, updates it if it already exists.
+          upsert_vercel_env() {
+            local KEY="$1"
+            local VALUE="$2"
+            local TYPE="${3:-encrypted}"   # plain | encrypted
+            local TARGETS='["production","preview","development"]'
+
+            # Mask the value so it never appears in logs
+            echo "::add-mask::$VALUE"
+
+            PAYLOAD=$(jq -n \
+              --arg key   "$KEY"   \
+              --arg value "$VALUE" \
+              --arg type  "$TYPE"  \
+              --argjson targets "$TARGETS" \
+              '{"key":$key,"value":$value,"type":$type,"target":$targets}')
+
+            # Attempt create (POST)
+            HTTP_CODE=$(curl -s -o /tmp/vercel_resp.json -w "%{http_code}" \
+              -X POST "https://api.vercel.com/v10/projects/${VERCEL_PROJECT_ID}/env" \
+              -H "Authorization: Bearer ${VERCEL_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "$PAYLOAD")
+
+            if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "201" ]; then
+              echo "✓ Created  $KEY"
+              return
+            fi
+
+            # If already exists → GET the existing ID → PATCH
+            ERROR_CODE=$(jq -r '.error.code // empty' /tmp/vercel_resp.json 2>/dev/null)
+            if [ "$ERROR_CODE" = "ENV_ALREADY_EXISTS" ] || echo "$HTTP_CODE" | grep -qE "^4"; then
+              ENV_ID=$(curl -sf \
+                "https://api.vercel.com/v9/projects/${VERCEL_PROJECT_ID}/env" \
+                -H "Authorization: Bearer ${VERCEL_TOKEN}" \
+                | jq -r ".envs[] | select(.key == \"$KEY\") | .id" | head -1)
+
+              if [ -n "$ENV_ID" ]; then
+                PATCH_PAYLOAD=$(jq -n --arg value "$VALUE" '{"value":$value}')
+                HTTP_PATCH=$(curl -s -o /dev/null -w "%{http_code}" \
+                  -X PATCH "https://api.vercel.com/v10/projects/${VERCEL_PROJECT_ID}/env/${ENV_ID}" \
+                  -H "Authorization: Bearer ${VERCEL_TOKEN}" \
+                  -H "Content-Type: application/json" \
+                  -d "$PATCH_PAYLOAD")
+                echo "✓ Updated  $KEY (HTTP $HTTP_PATCH)"
+              else
+                echo "✗ Failed to set $KEY — could not find existing env var ID"
+                cat /tmp/vercel_resp.json
+                exit 1
+              fi
+            else
+              echo "✗ Failed to create $KEY (HTTP $HTTP_CODE)"
+              cat /tmp/vercel_resp.json
+              exit 1
+            fi
+          }
+
+          # ── Generate new secrets if not supplied ─────────────────────────────────
+          if [ -z "$JWT_SECRET_INPUT" ]; then
+            JWT_SECRET_VAL=$(openssl rand -hex 48)
+            echo "  → JWT_SECRET auto-generated (96 hex chars)"
+          else
+            JWT_SECRET_VAL="$JWT_SECRET_INPUT"
+            echo "  → JWT_SECRET using provided value"
+          fi
+          echo "::add-mask::$JWT_SECRET_VAL"
+
+          if [ -z "$QR_ENCRYPTION_KEY_INPUT" ]; then
+            QR_ENCRYPTION_KEY_VAL=$(openssl rand -hex 24)
+            echo "  → QR_ENCRYPTION_KEY auto-generated (48 hex chars)"
+          else
+            QR_ENCRYPTION_KEY_VAL="$QR_ENCRYPTION_KEY_INPUT"
+            echo "  → QR_ENCRYPTION_KEY using provided value"
+          fi
+          echo "::add-mask::$QR_ENCRYPTION_KEY_VAL"
+
+          if [ -z "$VITE_QR_SECRET_KEY_INPUT" ]; then
+            VITE_QR_SECRET_KEY_VAL=$(openssl rand -hex 32)
+            echo "  → VITE_QR_SECRET_KEY auto-generated (64 hex chars)"
+          else
+            VITE_QR_SECRET_KEY_VAL="$VITE_QR_SECRET_KEY_INPUT"
+            echo "  → VITE_QR_SECRET_KEY using provided value"
+          fi
+          echo "::add-mask::$VITE_QR_SECRET_KEY_VAL"
+
+          # ── Set all variables ─────────────────────────────────────────────────────
+          echo ""
+          echo "Setting Vercel environment variables..."
+          echo ""
+
+          # Frontend vars (used in React build — VITE_ prefix required)
+          upsert_vercel_env "VITE_SUPABASE_URL"    "https://ifpvklpkmokiagmxcsjq.supabase.co" "plain"
+          upsert_vercel_env "VITE_SUPABASE_ANON_KEY" "$VITE_SUPABASE_ANON_KEY"  "encrypted"
+          upsert_vercel_env "VITE_QR_SECRET_KEY"   "$VITE_QR_SECRET_KEY_VAL"   "encrypted"
+
+          # Serverless function vars (api/verify-payment.js)
+          upsert_vercel_env "SUPABASE_SERVICE_ROLE_KEY" "$SUPABASE_SERVICE_ROLE_KEY" "encrypted"
+          upsert_vercel_env "REMITA_SECRET_KEY"     "$REMITA_SECRET_KEY"         "encrypted"
+
+          # Express server vars (server/src/ — deployed but currently dormant for frontend)
+          [ -n "$MONGODB_URI" ]  && upsert_vercel_env "MONGODB_URI"  "$MONGODB_URI"  "encrypted"
+          upsert_vercel_env "JWT_SECRET"            "$JWT_SECRET_VAL"            "encrypted"
+          upsert_vercel_env "QR_ENCRYPTION_KEY"     "$QR_ENCRYPTION_KEY_VAL"    "encrypted"
+          [ -n "$CLIENT_URL" ]   && upsert_vercel_env "CLIENT_URL"   "$CLIENT_URL"   "plain"
+
+          # Runtime
+          upsert_vercel_env "NODE_ENV" "production" "plain"
+
+          echo ""
+          echo "✓ All environment variables configured in Vercel."
+          echo "  Next step: trigger a new Vercel deployment to apply the changes."
+
+      - name: Trigger Vercel redeploy
+        run: |
+          echo "Requesting latest deployment redeploy..."
+
+          # Get the latest deployment for this project
+          LATEST_DEPLOY_ID=$(curl -sf \
+            "https://api.vercel.com/v6/deployments?projectId=${VERCEL_PROJECT_ID}&limit=1" \
+            -H "Authorization: Bearer ${VERCEL_TOKEN}" \
+            | jq -r '.deployments[0].uid // empty')
+
+          if [ -z "$LATEST_DEPLOY_ID" ]; then
+            echo "⚠ No existing deployment found to redeploy — push a commit to trigger a new build."
+          else
+            REDEPLOY_RESP=$(curl -s -o /dev/null -w "%{http_code}" \
+              -X POST "https://api.vercel.com/v13/deployments" \
+              -H "Authorization: Bearer ${VERCEL_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "{\"deploymentId\": \"${LATEST_DEPLOY_ID}\", \"name\": \"exam-verify-system\"}")
+            echo "✓ Redeploy triggered (HTTP $REDEPLOY_RESP)"
+          fi

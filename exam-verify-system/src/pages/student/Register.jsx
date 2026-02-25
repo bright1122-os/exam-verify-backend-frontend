@@ -3,16 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { User, Camera, CreditCard, CheckCircle, ArrowLeft, ArrowRight, Upload, X, Loader2, ShieldCheck, FileText } from 'lucide-react';
+import {
+  User, Camera, CreditCard, CheckCircle, ArrowLeft, ArrowRight,
+  Upload, X, Loader2, ShieldCheck, FileText, GraduationCap
+} from 'lucide-react';
 import { PageTransition } from '../../components/layout/PageTransition';
 import { supabase } from '../../lib/supabase';
 import { useStore } from '../../store/useStore';
 
 const steps = [
-  { id: 1, title: 'Identity', icon: User },
-  { id: 2, title: 'Photo', icon: Camera },
-  { id: 3, title: 'Payment', icon: CreditCard },
-  { id: 4, title: 'Success', icon: CheckCircle },
+  { id: 1, title: 'Identity',  subtitle: 'Academic details',  icon: GraduationCap },
+  { id: 2, title: 'Photo',     subtitle: 'Passport photo',    icon: Camera },
+  { id: 3, title: 'Payment',   subtitle: 'Fee verification',  icon: CreditCard },
+  { id: 4, title: 'Complete',  subtitle: 'All done',          icon: CheckCircle },
 ];
 
 const faculties = [
@@ -38,7 +41,7 @@ export default function Register() {
   useEffect(() => {
     const fetchPendingPayment = async () => {
       if (!user) return;
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('payments')
         .select('*')
         .eq('user_id', user.id)
@@ -54,29 +57,14 @@ export default function Register() {
   }, [user]);
 
   const handlePhotoChange = (e) => {
-    try {
-      const file = e.target.files?.[0]; // Safe access
-      if (!file) return;
-
-      if (file.size > 10 * 1024 * 1024) {
-        toast.error('Photo must be less than 10MB');
-        return;
-      }
-
-      const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
-      if (!validTypes.includes(file.type)) {
-        toast.error('Only JPG and PNG files are allowed');
-        return;
-      }
-
-      setPhotoFile(file);
-      // Revoke old object URL to avoid memory leaks
-      if (photoPreview) URL.revokeObjectURL(photoPreview);
-      setPhotoPreview(URL.createObjectURL(file));
-    } catch (error) {
-      console.error('Error in handlePhotoChange:', error);
-      toast.error('Failed to process image');
-    }
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) { toast.error('Photo must be less than 10MB'); return; }
+    const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
+    if (!validTypes.includes(file.type)) { toast.error('Only JPG, PNG, or WEBP files are allowed'); return; }
+    setPhotoFile(file);
+    if (photoPreview) URL.revokeObjectURL(photoPreview);
+    setPhotoPreview(URL.createObjectURL(file));
   };
 
   const removePhoto = (e) => {
@@ -91,33 +79,21 @@ export default function Register() {
     if (!photoFile) throw new Error('No file selected');
     if (!user) throw new Error('User not authenticated');
 
-    try {
-      const fileExt = photoFile.name.split('.').pop();
-      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-      const filePath = `${fileName}`;
+    const fileExt = photoFile.name.split('.').pop();
+    const fileName = `${user.id}-${Date.now()}.${fileExt}`;
 
-      const { data, error: uploadError } = await supabase.storage
-        .from('photos')
-        .upload(filePath, photoFile, {
-          cacheControl: '3600',
-          upsert: false
-        });
+    const { error: uploadError } = await supabase.storage
+      .from('photos')
+      .upload(fileName, photoFile, { cacheControl: '3600', upsert: false });
 
-      if (uploadError) throw uploadError;
+    if (uploadError) throw uploadError;
 
-      const { data: publicUrlData } = supabase.storage
-        .from('photos')
-        .getPublicUrl(filePath);
+    const { data: publicUrlData } = supabase.storage
+      .from('photos')
+      .getPublicUrl(fileName);
 
-      if (!publicUrlData || !publicUrlData.publicUrl) {
-        throw new Error('Failed to get public URL');
-      }
-
-      return publicUrlData.publicUrl;
-    } catch (error) {
-      console.error('Error in uploadPhoto:', error);
-      throw error;
-    }
+    if (!publicUrlData?.publicUrl) throw new Error('Failed to get photo URL');
+    return publicUrlData.publicUrl;
   };
 
   const nextStep = async () => {
@@ -129,60 +105,37 @@ export default function Register() {
     }
 
     if (currentStep === 2) {
-      if (!photoFile) {
-        toast.error('Please upload your photo');
-        return;
-      }
-
+      if (!photoFile) { toast.error('Please upload your passport photo'); return; }
       setLoading(true);
       try {
         const values = getValues();
-
-        // 1. Upload Photo
         const photoUrl = await uploadPhoto();
 
-        // 2. Insert Student Record
-        const { error: insertError } = await supabase
-          .from('students')
-          .insert({
-            user_id: user.id,
-            matric_number: values.matricNumber,
-            faculty: values.faculty,
-            department: values.department,
-            level: values.level,
-            photo_url: photoUrl,
-            registration_complete: true
-          });
-
+        const { error: insertError } = await supabase.from('students').insert({
+          user_id: user.id,
+          matric_number: values.matricNumber,
+          faculty: values.faculty,
+          department: values.department,
+          level: values.level,
+          photo_url: photoUrl,
+          registration_complete: true,
+        });
         if (insertError) throw insertError;
-
-        // 3. Simulate Payment Initialization
-        // Use TEST-SUCCESS for verifiable behavior in demo, or random RRR for realistic UI
-        const isDemo = true;
-        const paymentRef = isDemo ? 'TEST-SUCCESS' : `RRR-${Math.floor(Math.random() * 100000000000)}`;
-        const amount = 5000;
 
         const { data: payment, error: paymentError } = await supabase
           .from('payments')
-          .insert({
-            user_id: user.id,
-            amount: amount,
-            rrr: paymentRef,
-            status: 'pending'
-          })
+          .insert({ user_id: user.id, amount: 5000, rrr: 'TEST-SUCCESS', status: 'pending' })
           .select()
           .single();
-
         if (paymentError) throw paymentError;
 
         setPaymentData(payment);
         updateStudentData({ registrationComplete: true, photoUrl });
-
         toast.success('Profile saved. Proceeding to payment.');
         setCurrentStep(3);
       } catch (error) {
         console.error(error);
-        toast.error(error.message || 'Registration failed');
+        toast.error(error.message || 'Registration failed. Please try again.');
       } finally {
         setLoading(false);
       }
@@ -195,18 +148,12 @@ export default function Register() {
         const response = await fetch('/api/verify-payment', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            rrr: paymentData.rrr,
-            amount: paymentData.amount,
-            user_id: user.id
-          }),
+          body: JSON.stringify({ rrr: paymentData.rrr, amount: paymentData.amount, user_id: user.id }),
         });
 
         const data = await response.json();
 
         if (!response.ok) {
-          // Demo Fallback if backend isn't reachable or configured
-          console.warn('Backend verification failed, using demo fallback');
           if (paymentData.rrr === 'TEST-SUCCESS' || String(paymentData.rrr).startsWith('RRR-')) {
             toast.success('Demo Payment Verified!');
           } else {
@@ -216,12 +163,9 @@ export default function Register() {
           throw new Error(data.message || 'Payment invalid');
         }
 
-        // Verification successful
-        updateStudentData({ registrationComplete: true, photoUrl: user.user_metadata?.photo_url || null });
+        updateStudentData({ registrationComplete: true });
         setCurrentStep(4);
-
       } catch (error) {
-        console.error('Verification error:', error);
         toast.error(error.message || 'Could not verify payment');
       } finally {
         setLoading(false);
@@ -230,300 +174,406 @@ export default function Register() {
     }
   };
 
-  const prevStep = () => {
-    setCurrentStep(prev => Math.max(prev - 1, 1));
-  };
+  const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
+
+  const activeStep = steps[currentStep - 1];
 
   return (
-    <PageTransition>
-      <div className="min-h-screen bg-slate-50 py-12 px-4 font-body text-slate-900">
-        <div className="max-w-4xl mx-auto">
-          {/* Header */}
-          <div className="text-center mb-12">
-            <h1 className="text-3xl font-heading font-bold text-slate-900 tracking-tight">Student Registration</h1>
-            <p className="text-slate-500 mt-2 font-medium">Complete your profile to generate your exam pass</p>
+    <div className="min-h-screen flex bg-parchment selection:bg-primary/10">
+
+      {/* ── Left Panel — Branding + Step Progress ── */}
+      <div className="hidden lg:flex lg:w-[38%] bg-ink relative overflow-hidden flex-col justify-between p-12">
+        <div className="absolute inset-0 noise-overlay" />
+        <div className="absolute top-1/4 left-1/3 w-[350px] h-[350px] bg-primary/8 rounded-full blur-[140px] pointer-events-none" />
+        <div className="absolute bottom-1/4 right-1/4 w-[250px] h-[250px] bg-success/5 rounded-full blur-[110px] pointer-events-none" />
+
+        {/* Logo */}
+        <div className="relative z-10 flex items-center gap-3">
+          <div className="w-10 h-10 bg-white/[0.06] border border-white/[0.08] rounded-lg flex items-center justify-center">
+            <ShieldCheck className="w-6 h-6 text-white/60" />
           </div>
+          <span className="font-heading font-bold text-white/80 text-xl">ExamVerify</span>
+        </div>
 
-          {/* Stepper */}
-          <div className="hidden md:flex justify-between items-center mb-12 px-12 max-w-3xl mx-auto relative">
-            {/* Progress Bar Background */}
-            <div className="absolute top-1/2 left-12 right-12 h-[2px] bg-slate-200 -z-10 -translate-y-1/2" />
-            {/* Active Progress Bar */}
-            <motion.div
-              className="absolute top-1/2 left-12 h-[2px] bg-primary -z-10 -translate-y-1/2"
-              initial={{ width: '0%' }}
-              animate={{ width: `${((currentStep - 1) / (steps.length - 1)) * 100}%` }}
-              transition={{ duration: 0.5, ease: 'easeInOut' }}
-              style={{ maxWidth: 'calc(100% - 6rem)' }}
-            />
+        {/* Middle copy */}
+        <div className="relative z-10 max-w-xs">
+          <h2 className="text-display-sm font-heading font-bold text-white mb-4 leading-tight">
+            Set up your <span className="text-editorial text-primary-light">exam pass</span>
+          </h2>
+          <p className="text-body-md text-white/30 leading-relaxed mb-10">
+            Complete the registration steps to receive your encrypted digital exam pass. Takes about 3 minutes.
+          </p>
 
+          {/* Step sidebar */}
+          <div className="space-y-4">
             {steps.map((step) => {
-              const isActive = currentStep >= step.id;
-              const isCurrent = currentStep === step.id;
+              const isCompleted = currentStep > step.id;
+              const isCurrent  = currentStep === step.id;
+              const StepIcon   = step.icon;
 
               return (
-                <div key={step.id} className="flex flex-col items-center gap-2 bg-slate-50 px-2 z-10">
-                  <motion.div
-                    initial={false}
-                    animate={{
-                      scale: isCurrent ? 1.1 : 1,
-                      backgroundColor: isActive ? '#1E40AF' : '#F1F5F9',
-                      borderColor: isActive ? '#1E40AF' : '#CBD5E1',
-                      color: isActive ? '#FFFFFF' : '#94A3B8'
-                    }}
-                    className="w-10 h-10 rounded-xl flex items-center justify-center border-2 transition-colors shadow-sm"
-                  >
-                    {currentStep > step.id ? <CheckCircle className="w-6 h-6" /> : <step.icon className="w-5 h-5" />}
-                  </motion.div>
-                  <span className={`text-xs font-bold uppercase tracking-wider ${isActive ? 'text-primary' : 'text-slate-400'}`}>
-                    {step.title}
-                  </span>
+                <div
+                  key={step.id}
+                  className={`flex items-center gap-4 transition-all duration-300 ${
+                    isCurrent  ? 'opacity-100' :
+                    isCompleted ? 'opacity-60'  : 'opacity-25'
+                  }`}
+                >
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-all duration-300 ${
+                    isCompleted ? 'bg-success/20 border border-success/30' :
+                    isCurrent   ? 'bg-primary/20 border border-primary/30' :
+                                  'bg-white/[0.04] border border-white/[0.06]'
+                  }`}>
+                    {isCompleted
+                      ? <CheckCircle className="w-4 h-4 text-success" />
+                      : <StepIcon className={`w-4 h-4 ${isCurrent ? 'text-primary-light' : 'text-white/40'}`} />
+                    }
+                  </div>
+                  <div>
+                    <p className={`text-sm font-body font-semibold leading-none mb-0.5 ${
+                      isCurrent ? 'text-white' : 'text-white/50'
+                    }`}>
+                      {step.title}
+                    </p>
+                    <p className="text-micro uppercase tracking-widest text-white/25 font-body">
+                      {step.subtitle}
+                    </p>
+                  </div>
                 </div>
               );
             })}
           </div>
+        </div>
 
-          {/* Main Card */}
-          <div className="bg-white rounded-[24px] shadow-premium max-w-2xl mx-auto relative overflow-hidden min-h-[500px] flex flex-col border border-slate-100">
-            <div className="p-8 lg:p-10 flex-1 flex flex-col">
-              <AnimatePresence mode="wait">
-                {currentStep === 1 && (
-                  <motion.div
-                    key="step1"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    className="flex-1 flex flex-col"
-                  >
-                    <h2 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2 pb-4 border-b border-slate-100">
-                      <User className="w-5 h-5 text-primary" />
-                      Academic Information
-                    </h2>
-                    <div className="space-y-6 flex-1">
-                      <div className="group">
-                        <label className="block text-sm font-bold text-slate-700 mb-2">Matriculation Number</label>
-                        <input
-                          {...register('matricNumber', { required: 'Matric number is required' })}
-                          className="input-premium w-full"
-                          placeholder="e.g. 2023/SCI/001"
-                        />
-                        {errors.matricNumber && <span className="text-red-500 text-sm mt-1 font-medium">{errors.matricNumber.message}</span>}
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="group">
-                          <label className="block text-sm font-bold text-slate-700 mb-2">Faculty</label>
-                          <div className="relative">
-                            <select
-                              {...register('faculty', { required: 'Required' })}
-                              className="input-premium w-full appearance-none"
-                            >
-                              <option value="">Select Faculty</option>
-                              {faculties.map(f => <option key={f} value={f}>{f}</option>)}
-                            </select>
-                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                              <ArrowRight className="w-4 h-4 rotate-90" />
-                            </div>
-                          </div>
-                          {errors.faculty && <span className="text-red-500 text-sm mt-1 font-medium">{errors.faculty.message}</span>}
-                        </div>
-
-                        <div className="group">
-                          <label className="block text-sm font-bold text-slate-700 mb-2">Level</label>
-                          <div className="relative">
-                            <select
-                              {...register('level', { required: 'Required' })}
-                              className="input-premium w-full appearance-none"
-                            >
-                              <option value="">Select Level</option>
-                              {levels.map(l => <option key={l} value={l}>{l} Level</option>)}
-                            </select>
-                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                              <ArrowRight className="w-4 h-4 rotate-90" />
-                            </div>
-                          </div>
-                          {errors.level && <span className="text-red-500 text-sm mt-1 font-medium">{errors.level.message}</span>}
-                        </div>
-                      </div>
-
-                      <div className="group">
-                        <label className="block text-sm font-bold text-slate-700 mb-2">Department</label>
-                        <input
-                          {...register('department', { required: 'Department is required' })}
-                          className="input-premium w-full"
-                          placeholder="e.g. Computer Science"
-                        />
-                        {errors.department && <span className="text-red-500 text-sm mt-1 font-medium">{errors.department.message}</span>}
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-
-                {currentStep === 2 && (
-                  <motion.div
-                    key="step2"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    className="flex-1 flex flex-col"
-                  >
-                    <h2 className="text-xl font-bold text-slate-900 mb-2 flex items-center gap-2">
-                      <Camera className="w-5 h-5 text-primary" />
-                      Passport Photograph
-                    </h2>
-                    <p className="text-slate-500 text-sm mb-6 pb-4 border-b border-slate-100">Upload a clear front-facing photo for your exam pass.</p>
-
-                    <div className="flex-1 flex flex-col items-center justify-center py-6">
-                      {!photoPreview ? (
-                        <label className="w-full h-80 border-2 border-dashed border-slate-300 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-all group bg-slate-50">
-                          <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mb-6 shadow-sm group-hover:scale-110 transition-transform text-slate-400 group-hover:text-primary border border-slate-100">
-                            <Upload className="w-8 h-8" />
-                          </div>
-                          <span className="font-bold text-lg text-slate-700 group-hover:text-primary">Click to upload photo</span>
-                          <span className="text-sm text-slate-400 mt-2 font-medium">JPG or PNG (Max 10MB)</span>
-                          <input
-                            type="file"
-                            ref={fileInputRef}
-                            onChange={handlePhotoChange}
-                            className="hidden"
-                            accept="image/*"
-                          />
-                        </label>
-                      ) : (
-                        <div className="relative group">
-                          <div className="w-64 h-64 rounded-2xl overflow-hidden border-4 border-white shadow-2xl ring-1 ring-slate-100">
-                            <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
-                          </div>
-                          <button
-                            onClick={removePhoto}
-                            className="absolute -top-4 -right-4 w-10 h-10 bg-white text-red-500 rounded-full flex items-center justify-center shadow-lg hover:bg-red-50 border border-slate-100 transition-colors"
-                          >
-                            <X className="w-5 h-5" />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </motion.div>
-                )}
-
-                {currentStep === 3 && (
-                  <motion.div
-                    key="step3"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    className="flex-1 flex flex-col"
-                  >
-                    <h2 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2 pb-4 border-b border-slate-100">
-                      <CreditCard className="w-5 h-5 text-primary" />
-                      Fee Verification
-                    </h2>
-
-                    {paymentData ? (
-                      <div className="space-y-6">
-                        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 relative overflow-hidden">
-                          <div className="absolute top-0 right-0 p-4 opacity-5">
-                            <FileText className="w-32 h-32" />
-                          </div>
-                          <div className="relative z-10">
-                            <div className="flex justify-between items-center mb-4">
-                              <span className="text-slate-500 text-xs font-bold uppercase tracking-wider">Remita Reference (RRR)</span>
-                              <span className="font-mono text-lg font-bold text-slate-900 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm select-all">{paymentData.rrr}</span>
-                            </div>
-                            <div className="flex justify-between items-center mb-4">
-                              <span className="text-slate-500 text-xs font-bold uppercase tracking-wider">Amount Due</span>
-                              <span className="text-2xl font-bold text-slate-900">₦{paymentData.amount?.toLocaleString()}</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-slate-500 text-xs font-bold uppercase tracking-wider">Status</span>
-                              <span className="px-3 py-1 bg-amber-100 text-amber-700 border border-amber-200 rounded-full text-xs font-bold">Pending Payment</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex gap-4 p-5 bg-primary/5 rounded-2xl border border-primary/10">
-                          <ShieldCheck className="w-6 h-6 text-primary shrink-0" />
-                          <p className="text-sm text-slate-600 leading-relaxed font-medium">
-                            Complete your payment on Remita using the RRR above. Once successful, click <span className="text-primary font-bold">Verify Payment</span> to generate your pass.
-                          </p>
-                        </div>
-
-                        <a
-                          href={`https://remitademo.net/remita/onepage/biller/${paymentData.rrr}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="btn-secondary w-full justify-center group"
-                        >
-                          Proceed to Remita <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                        </a>
-                      </div>
-                    ) : (
-                      <div className="flex-1 flex flex-col items-center justify-center py-12">
-                        <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
-                        <p className="text-slate-500 font-medium">Generating Payment Reference...</p>
-                      </div>
-                    )}
-                  </motion.div>
-                )}
-
-                {currentStep === 4 && (
-                  <motion.div
-                    key="step4"
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="flex-1 flex flex-col items-center justify-center text-center py-12"
-                  >
-                    <div className="w-24 h-24 bg-success/10 rounded-full flex items-center justify-center mb-6 shadow-sm border border-success/20">
-                      <CheckCircle className="w-12 h-12 text-success" />
-                    </div>
-                    <h2 className="text-3xl font-heading font-bold text-slate-900 mb-4">You're All Set!</h2>
-                    <p className="text-slate-500 max-w-md mx-auto mb-8 text-lg font-medium">
-                      Your profile has been created and payment verified. Your digital exam pass is ready for download.
-                    </p>
-                    <button
-                      onClick={() => navigate('/student/dashboard')}
-                      className="btn-primary px-10 text-lg py-4 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all"
-                    >
-                      Go to Dashboard
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* Footer Navigation */}
-            {currentStep < 4 && (
-              <div className="p-8 border-t border-slate-100 flex justify-between items-center bg-slate-50/50">
-                {currentStep > 1 ? (
-                  <button
-                    onClick={prevStep}
-                    className="text-slate-500 hover:text-slate-800 font-bold text-sm flex items-center gap-2 px-4 py-2 hover:bg-white rounded-lg transition-all"
-                  >
-                    <ArrowLeft className="w-4 h-4" /> Back
-                  </button>
-                ) : (
-                  <div />
-                )}
-
-                <button
-                  onClick={nextStep}
-                  disabled={loading}
-                  className="btn-primary px-8 shadow-md"
-                >
-                  {loading ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <span className="flex items-center gap-2">
-                      {currentStep === 3 ? 'Verify Payment' : 'Next Step'}
-                      <ArrowRight className="w-4 h-4" />
-                    </span>
-                  )}
-                </button>
-              </div>
-            )}
-          </div>
+        {/* Bottom note */}
+        <div className="relative z-10">
+          <p className="text-micro uppercase tracking-widest text-white/20 font-body">
+            All data is encrypted in transit and at rest
+          </p>
         </div>
       </div>
-    </PageTransition>
+
+      {/* ── Right Panel — Form ── */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
+
+        {/* Mobile header */}
+        <div className="lg:hidden w-full max-w-[480px] flex items-center justify-between mb-10">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center shadow-lg shadow-primary/20">
+              <ShieldCheck className="w-5 h-5 text-white" />
+            </div>
+            <span className="text-lg font-heading font-bold text-anthracite">ExamVerify</span>
+          </div>
+          {/* Mobile step dots */}
+          <div className="flex gap-2">
+            {steps.map(s => (
+              <div
+                key={s.id}
+                className={`rounded-full transition-all duration-300 ${
+                  currentStep === s.id  ? 'w-6 h-2 bg-primary' :
+                  currentStep > s.id   ? 'w-2 h-2 bg-success'  :
+                                         'w-2 h-2 bg-slate-200'
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Form card */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+          className="w-full max-w-[480px]"
+        >
+          {/* Step heading */}
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-label uppercase font-body font-semibold text-stone tracking-widest">
+                Step {currentStep} of {steps.length - 1}
+              </span>
+            </div>
+            <h1 className="text-display-sm font-heading font-bold text-anthracite mb-1">
+              {activeStep.title}
+            </h1>
+            <p className="text-body-md text-stone">{activeStep.subtitle}</p>
+          </div>
+
+          {/* Step content */}
+          <AnimatePresence mode="wait">
+
+            {/* ── Step 1: Identity ── */}
+            {currentStep === 1 && (
+              <motion.div
+                key="step1"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+                className="space-y-5"
+              >
+                <div className="group">
+                  <label className="block text-label uppercase font-body font-semibold text-slate-500 mb-2.5 ml-0.5 group-focus-within:text-primary transition-colors">
+                    Matriculation Number
+                  </label>
+                  <input
+                    {...register('matricNumber', { required: 'Matric number is required' })}
+                    className="input-premium"
+                    placeholder="e.g. 2023/SCI/001"
+                  />
+                  {errors.matricNumber && (
+                    <p className="text-red-500 text-body-sm mt-1.5 font-body font-medium">
+                      {errors.matricNumber.message}
+                    </p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="group">
+                    <label className="block text-label uppercase font-body font-semibold text-slate-500 mb-2.5 ml-0.5 group-focus-within:text-primary transition-colors">
+                      Faculty
+                    </label>
+                    <div className="relative">
+                      <select
+                        {...register('faculty', { required: 'Required' })}
+                        className="input-premium appearance-none"
+                      >
+                        <option value="">Select</option>
+                        {faculties.map(f => <option key={f} value={f}>{f}</option>)}
+                      </select>
+                      <ArrowRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 rotate-90 pointer-events-none" />
+                    </div>
+                    {errors.faculty && (
+                      <p className="text-red-500 text-body-sm mt-1.5 font-body font-medium">
+                        {errors.faculty.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="group">
+                    <label className="block text-label uppercase font-body font-semibold text-slate-500 mb-2.5 ml-0.5 group-focus-within:text-primary transition-colors">
+                      Level
+                    </label>
+                    <div className="relative">
+                      <select
+                        {...register('level', { required: 'Required' })}
+                        className="input-premium appearance-none"
+                      >
+                        <option value="">Select</option>
+                        {levels.map(l => <option key={l} value={l}>{l} Level</option>)}
+                      </select>
+                      <ArrowRight className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 rotate-90 pointer-events-none" />
+                    </div>
+                    {errors.level && (
+                      <p className="text-red-500 text-body-sm mt-1.5 font-body font-medium">
+                        {errors.level.message}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="group">
+                  <label className="block text-label uppercase font-body font-semibold text-slate-500 mb-2.5 ml-0.5 group-focus-within:text-primary transition-colors">
+                    Department
+                  </label>
+                  <input
+                    {...register('department', { required: 'Department is required' })}
+                    className="input-premium"
+                    placeholder="e.g. Computer Science"
+                  />
+                  {errors.department && (
+                    <p className="text-red-500 text-body-sm mt-1.5 font-body font-medium">
+                      {errors.department.message}
+                    </p>
+                  )}
+                </div>
+              </motion.div>
+            )}
+
+            {/* ── Step 2: Photo ── */}
+            {currentStep === 2 && (
+              <motion.div
+                key="step2"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+              >
+                <p className="text-body-sm text-stone mb-6">
+                  Upload a clear, front-facing passport photograph. This will appear on your exam pass.
+                </p>
+
+                {!photoPreview ? (
+                  <label className="group relative w-full h-64 border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-primary hover:bg-primary/[0.02] transition-all duration-300 bg-white">
+                    <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mb-4 shadow-sm group-hover:scale-105 group-hover:bg-primary/5 transition-all duration-300 border border-slate-100">
+                      <Upload className="w-7 h-7 text-slate-400 group-hover:text-primary transition-colors" />
+                    </div>
+                    <p className="font-body font-semibold text-slate-700 group-hover:text-primary transition-colors text-base">
+                      Click to upload photo
+                    </p>
+                    <p className="text-body-sm text-stone mt-1">JPG, PNG or WEBP · Max 10MB</p>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handlePhotoChange}
+                      className="hidden"
+                      accept="image/*"
+                    />
+                  </label>
+                ) : (
+                  <div className="relative flex justify-center">
+                    <div className="w-52 h-52 rounded-2xl overflow-hidden border-4 border-white shadow-premium-lg ring-1 ring-slate-200">
+                      <img src={photoPreview} alt="Passport preview" className="w-full h-full object-cover" />
+                    </div>
+                    <button
+                      onClick={removePhoto}
+                      className="absolute -top-3 right-[calc(50%-100px)] w-9 h-9 bg-white text-red-500 rounded-full flex items-center justify-center shadow-premium hover:bg-red-50 border border-slate-100 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2">
+                      <label className="cursor-pointer px-4 py-2 bg-white/90 backdrop-blur-sm rounded-full text-body-sm font-body font-semibold text-slate-600 border border-slate-200 hover:bg-white hover:text-primary transition-all shadow-sm">
+                        Change photo
+                        <input type="file" ref={fileInputRef} onChange={handlePhotoChange} className="hidden" accept="image/*" />
+                      </label>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {/* ── Step 3: Payment ── */}
+            {currentStep === 3 && (
+              <motion.div
+                key="step3"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+                className="space-y-5"
+              >
+                {paymentData ? (
+                  <>
+                    {/* Payment reference card */}
+                    <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-premium relative overflow-hidden">
+                      <div className="absolute top-0 right-0 p-5 opacity-[0.04]">
+                        <FileText className="w-28 h-28" />
+                      </div>
+                      <div className="space-y-4 relative z-10">
+                        <div className="flex justify-between items-center">
+                          <span className="text-label uppercase font-body font-semibold text-stone tracking-wider">
+                            Reference (RRR)
+                          </span>
+                          <span className="font-mono text-sm font-bold text-anthracite bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 select-all">
+                            {paymentData.rrr}
+                          </span>
+                        </div>
+                        <div className="h-px bg-slate-100" />
+                        <div className="flex justify-between items-center">
+                          <span className="text-label uppercase font-body font-semibold text-stone tracking-wider">
+                            Amount Due
+                          </span>
+                          <span className="text-heading-sm font-heading font-bold text-anthracite">
+                            ₦{paymentData.amount?.toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="h-px bg-slate-100" />
+                        <div className="flex justify-between items-center">
+                          <span className="text-label uppercase font-body font-semibold text-stone tracking-wider">
+                            Status
+                          </span>
+                          <span className="badge-warning">Pending</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Instruction */}
+                    <div className="flex gap-3 p-4 bg-primary/[0.04] rounded-xl border border-primary/10">
+                      <ShieldCheck className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                      <p className="text-body-sm text-slate-600 font-body leading-relaxed">
+                        Complete payment on Remita using the reference above, then click{' '}
+                        <strong className="text-primary">Verify Payment</strong> below.
+                      </p>
+                    </div>
+
+                    <a
+                      href={`https://remitademo.net/remita/onepage/biller/${paymentData.rrr}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn-secondary w-full justify-center group flex items-center gap-2"
+                    >
+                      Go to Remita
+                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    </a>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-16">
+                    <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
+                    <p className="text-stone font-body font-medium">Generating payment reference…</p>
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {/* ── Step 4: Complete ── */}
+            {currentStep === 4 && (
+              <motion.div
+                key="step4"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+                className="text-center py-8"
+              >
+                <div className="w-20 h-20 bg-success/10 border border-success/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <CheckCircle className="w-10 h-10 text-success" />
+                </div>
+                <h2 className="text-heading-lg font-heading font-bold text-anthracite mb-3">
+                  You&apos;re all set!
+                </h2>
+                <p className="text-body-md text-stone max-w-sm mx-auto mb-8 leading-relaxed">
+                  Your profile is complete and payment verified. Your digital exam pass is ready.
+                </p>
+                <button
+                  onClick={() => navigate('/student/dashboard')}
+                  className="btn-primary px-10 py-4 text-base"
+                >
+                  Go to Dashboard <ArrowRight className="w-5 h-5" />
+                </button>
+              </motion.div>
+            )}
+
+          </AnimatePresence>
+
+          {/* ── Navigation ── */}
+          {currentStep < 4 && (
+            <div className={`flex mt-8 ${currentStep > 1 ? 'justify-between' : 'justify-end'} items-center`}>
+              {currentStep > 1 && (
+                <button
+                  onClick={prevStep}
+                  className="flex items-center gap-2 px-4 py-2.5 text-body-sm font-body font-semibold text-stone hover:text-anthracite hover:bg-white rounded-xl transition-all border border-transparent hover:border-slate-100"
+                >
+                  <ArrowLeft className="w-4 h-4" /> Back
+                </button>
+              )}
+
+              <button
+                onClick={nextStep}
+                disabled={loading}
+                className="btn-primary px-8"
+              >
+                {loading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <>
+                    {currentStep === 3 ? 'Verify Payment' : 'Continue'}
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+        </motion.div>
+      </div>
+    </div>
   );
 }
