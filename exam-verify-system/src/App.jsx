@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { Navbar } from './components/layout/Navbar';
+import { Footer } from './components/layout/Footer';
 import { useStore } from './store/useStore';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
 
@@ -67,24 +68,24 @@ function App() {
           <Route path="/auth/signup" element={<SignUp />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
 
-          {/* Student Routes */}
+          {/* Student Routes — also accessible by admin for support/oversight */}
           <Route path="/student/register" element={
-            <ProtectedRoute allowedRoles={['student']}>
+            <ProtectedRoute allowedRoles={['student', 'admin']}>
               <StudentRegister />
             </ProtectedRoute>
           } />
           <Route path="/student/dashboard" element={
-            <ProtectedRoute allowedRoles={['student']}>
+            <ProtectedRoute allowedRoles={['student', 'admin']}>
               <StudentDashboard />
             </ProtectedRoute>
           } />
           <Route path="/student/qr-code" element={
-            <ProtectedRoute allowedRoles={['student']}>
+            <ProtectedRoute allowedRoles={['student', 'admin']}>
               <PrintQR />
             </ProtectedRoute>
           } />
           <Route path="/student/verification" element={
-            <ProtectedRoute allowedRoles={['student']}>
+            <ProtectedRoute allowedRoles={['student', 'admin']}>
               <VerificationStatus />
             </ProtectedRoute>
           } />
@@ -118,6 +119,8 @@ function App() {
           {/* 404 */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+
+        <Footer />
 
         <Toaster
           position="top-right"

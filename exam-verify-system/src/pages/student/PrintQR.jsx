@@ -66,7 +66,7 @@ export default function PrintQR() {
 
   return (
     <PageTransition>
-      <div className="min-h-screen bg-[#FCFAF7] py-8 px-4 font-body text-[#333331]">
+      <div className="min-h-screen bg-[#FCFAF7] pt-24 pb-8 px-4 font-body text-[#333331]">
         <div className="max-w-lg mx-auto">
           {/* Back Link */}
           <Link

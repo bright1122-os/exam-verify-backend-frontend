@@ -141,19 +141,23 @@ export default function ScanPortal() {
   };
 
   const verifyStudent = async (studentId) => {
-    // Fetch Student with Profile
-    const { data: student, error } = await supabase
+    // Fetch student record
+    const { data: student, error: studentError } = await supabase
       .from('students')
-      .select(`
-            *,
-            profiles:profiles!user_id (full_name)
-        `)
+      .select('*')
       .eq('id', studentId)
       .single();
 
-    if (error || !student) throw new Error('Student record not found.');
+    if (studentError || !student) throw new Error('Student record not found.');
 
-    // Verification Logic
+    // Fetch the matching profile separately (students.user_id → auth.users.id = profiles.id)
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', student.user_id)
+      .single();
+
+    // Verification Logic — checked in order of likeliness
     if (!student.registration_complete) throw new Error('Student registration incomplete.');
     if (!student.payment_verified) throw new Error('Student fees NOT verified.');
     if (!student.qr_generated) throw new Error('Exam pass not generated.');
@@ -163,7 +167,7 @@ export default function ScanPortal() {
       success: true,
       student: {
         ...student,
-        name: student.profiles?.full_name || 'Student'
+        name: profile?.full_name || 'Student',
       },
       message: 'Student Verified',
     });
@@ -186,18 +190,14 @@ export default function ScanPortal() {
           status: 'approved',
           exam_hall: examHall,
           notes: notes,
-          scanned_at: new Date().toISOString()
+          scanned_at: new Date().toISOString(),
         });
 
       if (error) throw error;
 
-      // Mark the exam pass as used — prevents replay by any examiner
-      const { error: updateError } = await supabase
-        .from('students')
-        .update({ qr_used: true })
-        .eq('id', result.student.id);
-
-      if (updateError) throw updateError;
+      // Note: qr_used and qr_used_at are now set automatically by the
+      // on_verification_approved DB trigger (SECURITY DEFINER) when status = 'approved'.
+      // No client-side student UPDATE needed (and RLS would block it anyway).
 
       toast.success('Student approved!');
       resetScan();
@@ -253,7 +253,7 @@ export default function ScanPortal() {
 
   return (
     <PageTransition>
-      <div className="min-h-screen bg-slate-50 py-8 px-4 font-body text-slate-900">
+      <div className="min-h-screen bg-slate-50 pt-24 pb-8 px-4 font-body text-slate-900">
         <div className="max-w-lg mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">

@@ -83,7 +83,7 @@ export default function Dashboard() {
 
   return (
     <PageTransition>
-      <div className="min-h-screen bg-slate-50 py-12 px-4 font-body text-slate-900">
+      <div className="min-h-screen bg-slate-50 pt-28 pb-12 px-4 font-body text-slate-900">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
