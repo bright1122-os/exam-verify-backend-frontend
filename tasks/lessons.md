@@ -246,6 +246,63 @@ React's `useEffect` runs synchronously after render. If Zustand state has a fals
 
 ---
 
+## Lesson 011 — "Can't Find Variable" Is Often a Misidentified Error — Verify From Code Before Accepting the Label
+
+**Discovered:** 2026-02-25 (Session 5 — image upload root-cause investigation)
+
+**Mistake Pattern:**
+An error was labeled "Can't find variable: supabase when uploading an image" and accepted as a missing-import bug without verifying the actual code. The previous session's report filed this as "Safari-specific / likely module race" — another unverified guess.
+
+**Root Cause (proven by code + git history):**
+- Checked ALL commits from ca0da23 to bc55064 (entire project history)
+- Every version of Register.jsx has `import { supabase } from '../../lib/supabase'` on line 8/11
+- Every version of lib/supabase.js exports `supabase` correctly with fallback values
+- `createClient` tested in Node.js: with fallback strings ('https://placeholder.supabase.co', 'placeholder-key') → does NOT throw, creates valid client object
+- When env vars are missing: actual runtime error is `StorageUnknownError { message: "fetch failed" }` shown via `toast.error("fetch failed")` — NOT a ReferenceError
+- The "Can't find variable: supabase" label was a **misidentification of the actual failure**; the real failure is the upload network request failing because `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` are not configured
+
+**Impact:**
+- Wrong diagnosis → wrong fix (blaming Safari, import order, etc.)
+- Actual upload failures left unfixed with generic "Registration failed" toast
+- Users get no actionable guidance about what went wrong
+
+**Prevention Rule:**
+- NEVER accept an error label without verifying it against actual code
+- For "variable not defined" errors: run `grep -rn "import.*supabase" src/` to confirm — if import exists, the label is wrong
+- For upload failures: trace the exact error object type (StorageUnknownError vs ReferenceError) to distinguish config from code bugs
+- Add pre-flight guards in critical paths: check `isSupabaseConfigured` before attempting any Supabase operation and throw a clear, actionable error if not
+
+**How to Detect:**
+- `node -e "const {createClient} = require('@supabase/supabase-js'); createClient('https://placeholder.supabase.co', 'x').storage.from('b').upload('f', Buffer.from('t')).then(r => console.log(r))"` → shows `"fetch failed"`, proving the real error, not a ReferenceError
+- Run `grep -rn "supabase" src/ --include="*.jsx"` and cross-reference with `grep -rn "import.*supabase" src/` — if they match, there is no missing import
+
+---
+
+## Lesson 012 — Missing RLS SELECT Policy Makes Dashboard Always Show Zero
+
+**Discovered:** 2026-02-25 (Session 5 — examiner dashboard debugging)
+
+**Mistake Pattern:**
+Examiners could INSERT into `verifications` but had no SELECT policy. The Dashboard's stat queries returned `count: 0` and the history list was always empty — silently, with no error.
+
+**Root Cause:**
+RLS in Supabase is deny-by-default. INSERT and SELECT are independent permissions. Writing an INSERT policy does not grant SELECT. The `verifications_examiner_insert` policy was created but `verifications_examiner_select` was omitted.
+
+**Impact:**
+- Examiner dashboard showed 0 verifications total, 0 today, 0 approved/denied — regardless of actual data
+- No error was thrown — Supabase just returned 0 rows for the COUNT query
+
+**Prevention Rule:**
+- For any table that a role writes to, explicitly add BOTH an INSERT policy AND a SELECT policy
+- After any new table is created, enumerate all roles and ask: "Can this role SELECT from this table? INSERT? UPDATE? DELETE?" and create policies for each needed operation
+- Use `EXPLAIN` on any query that returns unexpected 0 results — often points to RLS blocking
+
+**How to Detect:**
+- If a dashboard shows 0 for everything despite data existing → run the same query in Supabase SQL Editor as the anon/service role
+- Check `pg_policies` view: `SELECT tablename, policyname, cmd FROM pg_policies WHERE tablename = 'verifications';` — if no SELECT policy for examiner role exists, that's the bug
+
+---
+
 ## Template for New Lessons
 
 ```

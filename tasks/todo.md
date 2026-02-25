@@ -252,9 +252,51 @@ After setting env vars and running the SQL migration, trigger a new Vercel deplo
 
 ---
 
+---
+
+## Session: 2026-02-25 — Production Stabilization (10 Bugs) + Image Upload Root-Cause Investigation
+
+### Status: COMPLETE
+
+**Goal:** Fix all critical production bugs, trace exact "Can't find variable: supabase" root cause.
+
+### Stabilization Pass (10 bugs fixed)
+- [x] Fix 1: Login redirect race — replaced setTimeout/stale-userType with useEffect watching {isAuthenticated, userType}
+- [x] Fix 2: vercel.json — removed broken @vercel/node build for Express app; set framework:vite + clean rewrites
+- [x] Fix 3: api/verify-payment.js — added SUPABASE_URL fallback, AbortSignal timeout, clearer error messages
+- [x] Fix 4: DB migration 20260225000003 — verifications_examiner_select RLS policy + on_verification_approved trigger (SECURITY DEFINER sets qr_used + qr_used_at)
+- [x] Fix 5: ScanPortal — fixed invalid profiles!user_id join; removed RLS-blocked students.update (now trigger)
+- [x] Fix 6: Dead route /examiner/history → /examiner/scan
+- [x] Fix 7: Footer not mounted in App.jsx
+- [x] Fix 8: Navbar padding — all dashboard pages had py-12 (48px) < navbar h-20 (80px); changed to pt-28
+- [x] Fix 9: Role flow — admin can now access student portal pages
+- [x] Fix 10: Supabase client — added isSupabaseConfigured export; clear console.error on missing env vars
+- [x] Build: vite build → 0 errors ✓
+
+### Image Upload Root-Cause Investigation
+- [x] Read all mandatory files (claude.md, EXAMVERIFY_DOCUMENTATION.md, agent.md, tasks/todo.md, tasks/lessons.md)
+- [x] Traced full upload path: Register.jsx → uploadPhoto() → supabase.storage.from('photos').upload()
+- [x] Checked every commit in git history (ca0da23 → bc55064) for missing supabase import
+- [x] Tested createClient behavior at runtime with undefined and placeholder values
+- [x] Confirmed: "Can't find variable: supabase" is NOT a missing import — every version of Register.jsx has correct import
+- [x] Confirmed: createClient with fallback strings does not throw (verified with node -e test)
+- [x] Found actual runtime error: StorageUnknownError("fetch failed") when env vars missing → shown as toast.error
+- [x] Applied fix: isSupabaseConfigured pre-flight guard in uploadPhoto(); upsert:true; specific error messages per failure type
+- [x] Build: vite build → 0 errors ✓
+
+### Verification Evidence
+- vite build: ✓ 2564 modules, 0 errors (both sessions)
+- Login fix confirmed: useEffect([authSuccess, isAuthenticated, userType]) at Login.jsx:20-26
+- RLS migration confirmed: verifications_examiner_select + SECURITY DEFINER trigger in migration file
+- ScanPortal confirmed: qr_used check present, students.update removed, trigger comment at lines 198-199
+- Upload fix confirmed: isSupabaseConfigured check, upsert:true, specific error handlers
+
+---
+
 ## Completed Tasks Archive
 
 | Date | Task | Result |
 |------|------|--------|
 | 2026-02-24 | Project handoff initialization — create operational files | Complete |
 | 2026-02-24 | Bug audit (7 bugs), security fix, architecture docs | Complete — 3 real bugs fixed, 4 misdiagnosed, secrets removed, claude.md created |
+| 2026-02-25 | Full stabilization pass (10 bugs) + image upload root-cause + architecture docs | Complete — all fixes applied, build passes, see session entry above |

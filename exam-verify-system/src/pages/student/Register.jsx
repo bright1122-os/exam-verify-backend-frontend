@@ -8,7 +8,7 @@ import {
   Upload, X, Loader2, ShieldCheck, FileText, GraduationCap
 } from 'lucide-react';
 import { PageTransition } from '../../components/layout/PageTransition';
-import { supabase } from '../../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { useStore } from '../../store/useStore';
 
 const steps = [
@@ -76,23 +76,57 @@ export default function Register() {
   };
 
   const uploadPhoto = async () => {
-    if (!photoFile) throw new Error('No file selected');
-    if (!user) throw new Error('User not authenticated');
+    // Guard 1: Supabase environment variables not configured
+    if (!isSupabaseConfigured) {
+      throw new Error(
+        'Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY ' +
+        'to your environment variables, then redeploy.'
+      );
+    }
 
-    const fileExt = photoFile.name.split('.').pop();
-    const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+    // Guard 2: Basic preconditions
+    if (!photoFile) throw new Error('No photo file selected');
+    if (!user) throw new Error('Not authenticated — please log in again');
 
+    const fileExt = photoFile.name.split('.').pop().toLowerCase();
+    // Include user ID in path so each student's photo is isolated in storage
+    const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+    // upsert: true — overwrites if the same path exists (safe for retry / re-upload)
     const { error: uploadError } = await supabase.storage
       .from('photos')
-      .upload(fileName, photoFile, { cacheControl: '3600', upsert: false });
+      .upload(fileName, photoFile, { cacheControl: '3600', upsert: true });
 
-    if (uploadError) throw uploadError;
+    if (uploadError) {
+      // Translate Supabase storage error codes to actionable messages
+      const msg = uploadError.message || '';
+      if (msg.includes('Bucket not found') || msg.includes('bucket') || uploadError.statusCode === 404) {
+        throw new Error(
+          'Storage bucket "photos" not found. Run the SQL migration in Supabase SQL Editor to create it.'
+        );
+      }
+      if (msg.includes('row-level security') || msg.includes('policy') || uploadError.statusCode === 403) {
+        throw new Error(
+          'Upload blocked by storage policy. Ensure the "photos" bucket allows authenticated uploads.'
+        );
+      }
+      if (msg.toLowerCase().includes('fetch') || msg.toLowerCase().includes('network')) {
+        throw new Error(
+          'Network error — could not reach Supabase. Check that VITE_SUPABASE_URL is correct in your environment variables.'
+        );
+      }
+      // Fallback: surface the raw error
+      throw new Error(`Upload failed: ${msg}`);
+    }
 
     const { data: publicUrlData } = supabase.storage
       .from('photos')
       .getPublicUrl(fileName);
 
-    if (!publicUrlData?.publicUrl) throw new Error('Failed to get photo URL');
+    if (!publicUrlData?.publicUrl) {
+      throw new Error('Photo uploaded but URL could not be retrieved. Contact support.');
+    }
+
     return publicUrlData.publicUrl;
   };
 
