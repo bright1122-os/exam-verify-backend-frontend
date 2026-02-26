@@ -1,10 +1,16 @@
 name: Deploy to Vercel
 
-# Runs automatically on every push to main, and can be triggered manually.
-# Required GitHub Secrets:
-#   VERCEL_TOKEN       - Vercel personal access token (Settings → Tokens)
-#   VERCEL_ORG_ID      - Your Vercel user/team ID  (run: vercel whoami --token <tok>)
-#   VERCEL_PROJECT_ID  - Vercel project ID          (run: vercel projects ls --token <tok>)
+# Triggers on every push to main, and can be run manually.
+#
+# Required GitHub Secrets (repo Settings → Secrets and variables → Actions):
+#   VERCEL_TOKEN       – Vercel personal access token
+#   VERCEL_ORG_ID      – Your Vercel account/team ID
+#   VERCEL_PROJECT_ID  – The project's prj_... ID
+#
+# To get VERCEL_ORG_ID and VERCEL_PROJECT_ID, run in your own terminal:
+#   npx vercel login
+#   npx vercel link          # choose exam-verify-system-yv8p when prompted
+#   cat .vercel/project.json  # copy orgId → VERCEL_ORG_ID, projectId → VERCEL_PROJECT_ID
 
 on:
   push:
@@ -19,11 +25,6 @@ jobs:
     defaults:
       run:
         working-directory: exam-verify-system
-
-    env:
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
     steps:
       - name: Checkout
@@ -42,13 +43,27 @@ jobs:
       - name: Install Vercel CLI
         run: npm install -g vercel@latest
 
+      - name: Link Vercel project
+        run: |
+          mkdir -p .vercel
+          printf '{"orgId":"%s","projectId":"%s"}\n' \
+            "${{ secrets.VERCEL_ORG_ID }}" \
+            "${{ secrets.VERCEL_PROJECT_ID }}" \
+            > .vercel/project.json
+
       - name: Pull Vercel environment & project config
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
 
       - name: Build project
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: vercel build --prod --token "$VERCEL_TOKEN"
 
       - name: Deploy to Vercel (production)
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
           URL=$(vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN")
           echo "Deployed to: $URL"
