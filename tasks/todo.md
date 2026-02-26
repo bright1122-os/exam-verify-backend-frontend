@@ -350,6 +350,50 @@ After setting env vars and running the SQL migration, trigger a new Vercel deplo
 
 ---
 
+---
+
+## Session: 2026-02-26 — Supabase Import Audit (Session 7)
+
+### Status: COMPLETE
+
+**Goal:** Full audit of every `supabase` reference — verify canonical client, all imports present, upload correct.
+
+### Audit Results — 11 files reference `supabase`
+
+| File | Import Status |
+|------|--------------|
+| `src/lib/supabase.js` | IS the canonical module — `createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY)` with `isSupabaseConfigured` export ✅ |
+| `src/store/useStore.js` | `import { supabase } from '../lib/supabase'` ✅ |
+| `src/pages/student/Dashboard.jsx` | `import { supabase } from '../../lib/supabase'` ✅ |
+| `src/pages/student/Register.jsx` | `import { supabase, isSupabaseConfigured } from '../../lib/supabase'` ✅ |
+| `src/pages/student/PrintQR.jsx` | `import { supabase } from '../../lib/supabase'` ✅ |
+| `src/pages/student/VerificationStatus.jsx` | `import { supabase } from '../../lib/supabase'` ✅ |
+| `src/pages/auth/AuthCallback.jsx` | `import { supabase } from '../../lib/supabase'` ✅ |
+| `src/pages/examiner/Dashboard.jsx` | `import { supabase } from '../../lib/supabase'` ✅ |
+| `src/pages/examiner/ScanPortal.jsx` | `import { supabase } from '../../lib/supabase'` ✅ |
+| `src/pages/admin/Dashboard.jsx` | `import { supabase } from '../../lib/supabase'` ✅ |
+| `src/pages/Settings.jsx` | `import { supabase } from '../lib/supabase'` ✅ |
+| `api/verify-payment.js` | Own `createClient(supabaseUrl, serviceRoleKey)` — correct for server-side ✅ |
+
+**Zero files missing an import. Zero duplicate clients.**
+
+### Root Cause Confirmation
+
+- `"ReferenceError: supabase is not defined"` was a **misidentified error** (confirmed by previous session `985de51`).
+- **Actual error**: `StorageUnknownError("fetch failed")` when `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` are missing from the environment.
+- Fix already applied: `isSupabaseConfigured` pre-flight guard in `Register.jsx uploadPhoto()`.
+- To resolve locally: create `.env.local` (gitignored) with `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
+- To resolve in production: confirm env vars exist in Vercel → Settings → Environment Variables, then redeploy.
+
+### Verification
+- [x] `vite build` → ✓ 2564 modules, 0 errors ✅
+- [x] All 11 supabase-using files confirmed to have correct relative import ✅
+- [x] Canonical module at `src/lib/supabase.js` uses `import.meta.env.VITE_*` with placeholder fallback ✅
+- [x] No global `window.supabase` or bare `var supabase` references ✅
+- [x] Upload (`Register.jsx`) uses `supabase.storage.from('photos').upload(...)` correctly ✅
+
+---
+
 ## Completed Tasks Archive
 
 | Date | Task | Result |
@@ -358,3 +402,4 @@ After setting env vars and running the SQL migration, trigger a new Vercel deplo
 | 2026-02-24 | Bug audit (7 bugs), security fix, architecture docs | Complete — 3 real bugs fixed, 4 misdiagnosed, secrets removed, claude.md created |
 | 2026-02-25 | Full stabilization pass (10 bugs) + image upload root-cause + architecture docs | Complete — all fixes applied, build passes, see session entry above |
 | 2026-02-26 | Full system audit (Priorities A–E) — upload validation, schema/RLS/trigger audit, UI/UX audit, Remita review, doc sync | Complete — 2 bugs fixed (admin dashboard join, PrintQR used QR status), all flows verified |
+| 2026-02-26 | Supabase import full audit (Session 7) — all 11 files verified, root cause confirmed as env vars not imports | Complete — 0 code changes needed, build clean |
