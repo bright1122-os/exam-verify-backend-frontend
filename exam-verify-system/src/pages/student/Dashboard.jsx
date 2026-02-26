@@ -1,12 +1,22 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { CheckCircle, Clock, QrCode, CreditCard, User, ArrowRight, Shield, AlertTriangle, GraduationCap, FileText, ChevronRight } from 'lucide-react';
+import {
+  CheckCircle, Clock, QrCode, CreditCard, User,
+  ArrowRight, Shield, GraduationCap, FileText,
+  ChevronRight, Printer, BookOpen,
+} from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { supabase } from '../../lib/supabase';
 import { PageTransition } from '../../components/layout/PageTransition';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { generateAvatar } from '../../utils/mockImages';
+
+const fadeUp = (delay = 0) => ({
+  initial: { opacity: 0, y: 16 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94], delay },
+});
 
 export default function Dashboard() {
   const { user } = useStore();
@@ -15,290 +25,494 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchDashboard = async () => {
+    if (!user) return;
+    const load = async () => {
       try {
-        if (!user) return;
-
-        // Fetch Student Data
-        const { data: studentData } = await supabase
-          .from('students')
-          .select('*')
-          .eq('user_id', user.id)
-          .single();
-
-        if (studentData) {
-          setStudent(studentData);
-        }
-
-        // Fetch Payment Data
-        const { data: paymentData } = await supabase
-          .from('payments')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
-
-        if (paymentData) {
-          setPayment(paymentData);
-        }
-
-      } catch (error) {
-        console.error('Dashboard fetch error:', error);
+        const [{ data: s }, { data: p }] = await Promise.all([
+          supabase.from('students').select('*').eq('user_id', user.id).maybeSingle(),
+          supabase
+            .from('payments')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+        ]);
+        setStudent(s);
+        setPayment(p);
+      } catch (err) {
+        console.error('Dashboard fetch error:', err);
       } finally {
         setLoading(false);
       }
     };
-    fetchDashboard();
+    load();
   }, [user]);
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="min-h-screen flex items-center justify-center bg-parchment">
         <LoadingSpinner size="lg" text="Loading dashboard..." />
       </div>
     );
   }
 
-  const progressSteps = [
-    {
-      title: 'Profile Setup',
-      completed: student?.registration_complete,
-      icon: User,
-      desc: 'Personal & Academic Info'
-    },
-    {
-      title: 'Fee Payment',
-      completed: student?.payment_verified,
-      icon: CreditCard,
-      desc: 'Verification via Remita'
-    },
-    {
-      title: 'Exam Pass',
-      completed: student?.qr_generated,
-      icon: QrCode,
-      desc: 'Ready for download'
-    },
+  const name =
+    user?.user_metadata?.full_name ||
+    user?.user_metadata?.name ||
+    user?.email?.split('@')[0] ||
+    'Student';
+
+  const steps = [
+    { id: 1, label: 'Profile Setup', done: !!student?.registration_complete, icon: User },
+    { id: 2, label: 'Fee Payment',   done: !!student?.payment_verified,      icon: CreditCard },
+    { id: 3, label: 'Exam Pass',     done: !!student?.qr_generated,          icon: QrCode },
   ];
+
+  const completedCount = steps.filter((s) => s.done).length;
+  const paymentVerified =
+    payment?.status === 'verified' || payment?.status === 'completed';
+
+  // Determine the one primary action the student should take next
+  let primaryAction;
+  if (!student?.registration_complete) {
+    primaryAction = {
+      to: '/student/register',
+      label: 'Complete Profile',
+      description: 'Upload academic details and your passport photo to begin.',
+      Icon: User,
+    };
+  } else if (!student?.payment_verified) {
+    primaryAction = {
+      to: '/student/register',
+      label: 'Verify Payment',
+      description: 'Your profile is saved. Confirm your exam fee on step 3.',
+      Icon: CreditCard,
+    };
+  } else if (!student?.qr_generated) {
+    primaryAction = {
+      to: '/student/qr-code',
+      label: 'Get Exam Pass',
+      description: 'Payment confirmed. Generate your encrypted QR exam pass now.',
+      Icon: QrCode,
+    };
+  } else {
+    primaryAction = {
+      to: '/student/qr-code',
+      label: 'Print Exam Pass',
+      description: 'Your pass is ready. Print or download it before your exam.',
+      Icon: Printer,
+    };
+  }
 
   return (
     <PageTransition>
-      <div className="min-h-screen bg-slate-50 pt-28 pb-12 px-4 font-body text-slate-900">
-        <div className="max-w-6xl mx-auto">
-          {/* Header */}
-          <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-heading font-bold text-slate-900 tracking-tight">Student Dashboard</h1>
-              <p className="text-slate-500 mt-1">Manage your examination clearance status</p>
-            </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 rounded-full shadow-sm text-sm font-medium text-slate-600">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              System Operational
-            </div>
-          </div>
+      <div className="min-h-screen bg-parchment pt-24 pb-16 px-4 sm:px-6">
+        <div className="max-w-5xl mx-auto">
 
-          <div className="grid lg:grid-cols-3 gap-8">
-            {/* Main Content */}
-            <div className="lg:col-span-2 space-y-8">
+          {/* ── Page Header ── */}
+          <motion.div
+            {...fadeUp(0)}
+            className="flex flex-wrap items-start justify-between gap-4 mb-8"
+          >
+            <div>
+              <p className="text-label uppercase tracking-widest font-body font-semibold text-stone mb-1">
+                Student Portal
+              </p>
+              <h1 className="text-heading-lg font-heading font-bold text-anthracite leading-tight">
+                {name}
+              </h1>
+            </div>
+
+            <div
+              className={`flex items-center gap-2 px-4 py-2 rounded-full border text-body-sm font-body font-semibold ${
+                completedCount === 3
+                  ? 'bg-success/10 border-success/20 text-success'
+                  : 'bg-amber-50 border-amber-200 text-amber-600'
+              }`}
+            >
+              {completedCount === 3 ? (
+                <CheckCircle className="w-4 h-4" />
+              ) : (
+                <Clock className="w-4 h-4" />
+              )}
+              {completedCount === 3 ? 'All Clear' : `${completedCount} / 3 Complete`}
+            </div>
+          </motion.div>
+
+          {/* ── Horizontal Progress Stepper ── */}
+          <motion.div
+            {...fadeUp(0.07)}
+            className="bg-white border border-slate-100 rounded-2xl px-6 py-5 mb-8 shadow-premium"
+          >
+            <div className="relative flex items-start justify-between">
+              {/* Connector line (behind circles) */}
+              <div
+                className="absolute top-5 left-[calc(16.67%+4px)] right-[calc(16.67%+4px)] h-0.5 bg-slate-100"
+                aria-hidden="true"
+              />
+
+              {steps.map((step, i) => {
+                const StepIcon = step.icon;
+                const isActive = !step.done && (i === 0 || steps[i - 1].done);
+                return (
+                  <div
+                    key={step.id}
+                    className="relative z-10 flex flex-col items-center gap-2.5 flex-1"
+                  >
+                    <div
+                      className={`w-10 h-10 rounded-full flex items-center justify-center border-2 bg-white transition-all ${
+                        step.done
+                          ? 'border-success bg-success text-white shadow-sm'
+                          : isActive
+                          ? 'border-primary text-primary shadow-md shadow-primary/20'
+                          : 'border-slate-200 text-slate-300'
+                      }`}
+                    >
+                      {step.done ? (
+                        <CheckCircle className="w-5 h-5" />
+                      ) : (
+                        <StepIcon className="w-4 h-4" />
+                      )}
+                    </div>
+                    <span
+                      className={`text-body-sm font-body font-semibold text-center leading-tight hidden sm:block ${
+                        step.done
+                          ? 'text-success'
+                          : isActive
+                          ? 'text-primary'
+                          : 'text-slate-300'
+                      }`}
+                    >
+                      {step.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+
+          {/* ── Main Grid ── */}
+          <div className="grid lg:grid-cols-5 gap-6">
+
+            {/* LEFT: Profile + Checklist + Payment */}
+            <div className="lg:col-span-3 space-y-6">
 
               {/* Profile Card */}
               <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-[24px] p-8 shadow-premium border border-slate-100 flex flex-col md:flex-row items-center md:items-start gap-8 relative overflow-hidden"
+                {...fadeUp(0.12)}
+                className="bg-white border border-slate-100 rounded-2xl shadow-premium overflow-hidden"
               >
-                {/* Decorative background blur */}
-                <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+                <div className="p-6 flex flex-col sm:flex-row items-center sm:items-start gap-6">
+                  <div className="shrink-0">
+                    <img
+                      src={student?.photo_url || generateAvatar(name)}
+                      alt="Student"
+                      className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover border-4 border-white shadow-premium ring-1 ring-slate-100"
+                    />
+                  </div>
 
-                <img
-                  src={student?.photo_url || generateAvatar(user?.user_metadata?.name || 'Student')}
-                  alt="Student"
-                  className="w-24 h-24 rounded-2xl object-cover shadow-md border-4 border-white ring-1 ring-slate-100"
-                />
-                <div className="flex-1 text-center md:text-left z-10">
-                  <h2 className="text-2xl font-bold text-slate-900 mb-1">{user?.user_metadata?.name || 'Student'}</h2>
-                  <p className="text-slate-500 font-medium mb-4 flex items-center justify-center md:justify-start gap-2">
-                    <GraduationCap className="w-4 h-4" />
-                    {student?.matric_number || 'Matriculation Number Pending'}
-                  </p>
+                  <div className="flex-1 text-center sm:text-left min-w-0">
+                    <h2 className="text-heading-sm font-heading font-bold text-anthracite mb-1 truncate">
+                      {name}
+                    </h2>
+                    <div className="flex items-center justify-center sm:justify-start gap-1.5 mb-4">
+                      <GraduationCap className="w-4 h-4 text-stone shrink-0" />
+                      <span className="text-body-sm font-body font-medium text-stone truncate">
+                        {student?.matric_number || 'Registration pending'}
+                      </span>
+                    </div>
 
-                  <div className="flex flex-wrap justify-center md:justify-start gap-3">
-                    <span className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-bold uppercase tracking-wider rounded-lg border border-slate-200">
-                      {student?.department || 'Department'}
-                    </span>
-                    <span className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-bold uppercase tracking-wider rounded-lg border border-slate-200">
-                      {student?.faculty || 'Faculty'}
-                    </span>
-                    <span className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-bold uppercase tracking-wider rounded-lg border border-slate-200">
-                      {student?.level || 'Level'}
-                    </span>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { label: 'Faculty',    value: student?.faculty },
+                        { label: 'Department', value: student?.department },
+                        { label: 'Level',      value: student?.level ? `${student.level}L` : null },
+                      ].map(({ label, value }) => (
+                        <div
+                          key={label}
+                          className="bg-slate-50 border border-slate-100 rounded-xl p-3 text-center"
+                        >
+                          <p className="text-micro uppercase tracking-widest font-body font-semibold text-stone mb-1">
+                            {label}
+                          </p>
+                          <p className="text-body-sm font-body font-bold text-anthracite leading-snug truncate">
+                            {value !== null && value !== undefined
+                              ? value
+                              : <span className="text-slate-300 font-normal">—</span>}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </motion.div>
 
-              {/* Progress Tracker */}
+              {/* Clearance Checklist */}
               <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="bg-white rounded-[24px] p-8 shadow-premium border border-slate-100"
+                {...fadeUp(0.18)}
+                className="bg-white border border-slate-100 rounded-2xl p-6 shadow-premium"
               >
-                <div className="flex items-center gap-3 mb-8">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                    <Shield className="w-5 h-5" />
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                    <Shield className="w-4 h-4 text-primary" />
                   </div>
-                  <div>
-                    <h2 className="text-lg font-bold text-slate-900 leading-tight">Clearance Status</h2>
-                    <p className="text-slate-500 text-xs font-medium">Complete all steps to proceed</p>
-                  </div>
+                  <h3 className="text-heading-sm font-heading font-bold text-anthracite">
+                    Clearance Checklist
+                  </h3>
                 </div>
 
-                <div className="relative">
-                  {/* Connector Line */}
-                  <div className="absolute left-[27px] top-8 bottom-8 w-0.5 bg-slate-100 -z-0" />
-
-                  <div className="space-y-8">
-                    {progressSteps.map((step, index) => (
-                      <div key={step.title} className="relative z-10 flex items-start gap-6">
-                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 border-4 border-white shadow-sm transition-colors ${step.completed
-                          ? 'bg-success text-white ring-2 ring-success/20'
-                          : 'bg-slate-100 text-slate-400 ring-2 ring-slate-100'
-                          }`}>
-                          {step.completed ? <CheckCircle className="w-6 h-6" /> : <step.icon className="w-6 h-6" />}
-                        </div>
-                        <div className="pt-2">
-                          <h3 className={`text-base font-bold ${step.completed ? 'text-slate-900' : 'text-slate-500'}`}>
-                            {step.title}
-                          </h3>
-                          <p className="text-sm text-slate-400 font-medium">{step.desc}</p>
-                        </div>
-                        {step.completed && (
-                          <div className="ml-auto pt-2">
-                            <span className="px-2 py-1 bg-success/10 text-success text-[10px] font-bold uppercase tracking-wider rounded">
-                              Completed
-                            </span>
-                          </div>
+                <div className="space-y-3">
+                  {[
+                    {
+                      label: 'Academic Profile',
+                      desc: student?.matric_number
+                        ? `Matric: ${student.matric_number}`
+                        : 'Upload details and your passport photo',
+                      done: !!student?.registration_complete,
+                    },
+                    {
+                      label: 'Fee Payment',
+                      desc: payment
+                        ? `₦${payment.amount?.toLocaleString()} · ${paymentVerified ? 'Verified' : 'Pending'}`
+                        : 'Pay exam clearance fee via Remita',
+                      done: !!student?.payment_verified,
+                    },
+                    {
+                      label: 'Exam Pass',
+                      desc: student?.qr_generated
+                        ? 'Encrypted QR code ready for printing'
+                        : 'Generated automatically after payment is confirmed',
+                      done: !!student?.qr_generated,
+                    },
+                  ].map((item) => (
+                    <div
+                      key={item.label}
+                      className={`flex items-start gap-4 p-4 rounded-xl border transition-colors ${
+                        item.done
+                          ? 'bg-success/[0.04] border-success/15'
+                          : 'bg-slate-50/60 border-slate-100'
+                      }`}
+                    >
+                      <div
+                        className={`mt-0.5 w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${
+                          item.done ? 'bg-success text-white' : 'bg-slate-200 text-slate-400'
+                        }`}
+                      >
+                        {item.done ? (
+                          <CheckCircle className="w-3.5 h-3.5" />
+                        ) : (
+                          <Clock className="w-3.5 h-3.5" />
                         )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p
+                          className={`text-body-sm font-body font-bold leading-tight ${
+                            item.done ? 'text-anthracite' : 'text-stone'
+                          }`}
+                        >
+                          {item.label}
+                        </p>
+                        <p className="text-micro text-stone mt-0.5 leading-relaxed">
+                          {item.desc}
+                        </p>
+                      </div>
+                      {item.done && (
+                        <span className="ml-auto shrink-0 text-[10px] font-body font-bold text-success bg-success/10 px-2 py-0.5 rounded-md border border-success/20 uppercase tracking-wide">
+                          Done
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+
+              {/* Payment Record */}
+              <motion.div
+                {...fadeUp(0.24)}
+                className="bg-white border border-slate-100 rounded-2xl p-6 shadow-premium"
+              >
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="w-9 h-9 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0">
+                    <CreditCard className="w-4 h-4 text-amber-600" />
+                  </div>
+                  <h3 className="text-heading-sm font-heading font-bold text-anthracite">
+                    Payment
+                  </h3>
+                  {payment && (
+                    <span
+                      className={`ml-auto text-[11px] font-body font-bold px-2.5 py-1 rounded-full border ${
+                        paymentVerified
+                          ? 'bg-success/10 text-success border-success/20'
+                          : 'bg-amber-50 text-amber-600 border-amber-200'
+                      }`}
+                    >
+                      {paymentVerified ? 'Verified' : 'Pending'}
+                    </span>
+                  )}
+                </div>
+
+                {payment ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-5">
+                    {[
+                      { label: 'RRR Reference', value: payment.rrr,         mono: true },
+                      { label: 'Amount',         value: `₦${payment.amount?.toLocaleString()}` },
+                      {
+                        label: 'Date',
+                        value: new Date(payment.created_at).toLocaleDateString('en-NG', {
+                          day: 'numeric', month: 'short', year: 'numeric',
+                        }),
+                      },
+                      { label: 'Status', value: paymentVerified ? 'Verified' : 'Pending' },
+                    ].map(({ label, value, mono }) => (
+                      <div key={label}>
+                        <p className="text-micro uppercase tracking-widest font-body font-semibold text-stone mb-1">
+                          {label}
+                        </p>
+                        <p
+                          className={`text-body-sm font-bold text-anthracite truncate ${
+                            mono ? 'font-mono' : 'font-body'
+                          }`}
+                        >
+                          {value}
+                        </p>
                       </div>
                     ))}
                   </div>
-                </div>
+                ) : (
+                  <div className="flex flex-col items-center py-8 text-center">
+                    <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center mb-3 border border-slate-100">
+                      <CreditCard className="w-6 h-6 text-slate-300" />
+                    </div>
+                    <p className="text-body-sm font-body font-semibold text-stone">
+                      No payment record
+                    </p>
+                    <p className="text-micro text-slate-300 mt-1">
+                      Complete registration to generate a payment reference.
+                    </p>
+                  </div>
+                )}
               </motion.div>
-
-              {/* Payment Details */}
-              {payment && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                  className="bg-white rounded-[24px] p-8 shadow-premium border border-slate-100"
-                >
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-600">
-                      <CreditCard className="w-5 h-5" />
-                    </div>
-                    <h2 className="text-lg font-bold text-slate-900">Payment History</h2>
-                  </div>
-
-                  <div className="bg-slate-50 rounded-xl border border-slate-200 p-5 grid grid-cols-2 md:grid-cols-4 gap-6">
-                    <div>
-                      <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">RRR Reference</p>
-                      <p className="font-mono font-medium text-slate-900 select-all">{payment.rrr}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Amount</p>
-                      <p className="font-bold text-slate-900">₦{payment.amount?.toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Date</p>
-                      <p className="font-medium text-slate-900">{new Date(payment.created_at).toLocaleDateString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Status</p>
-                      <span className={`inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wider ${payment.status === 'verified' || payment.status === 'completed' ? 'text-success' : 'text-amber-600'
-                        }`}>
-                        {payment.status === 'verified' || payment.status === 'completed' ? 'Verified' : 'Pending'}
-                      </span>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
             </div>
 
-            {/* Sidebar / Actions */}
-            <div className="space-y-6">
+            {/* RIGHT: Primary Action + Quick Links + Guidelines */}
+            <div className="lg:col-span-2 space-y-6">
+
+              {/* Primary Action Card */}
+              <motion.div {...fadeUp(0.15)}>
+                {(() => {
+                  const ActionIcon = primaryAction.Icon;
+                  return (
+                    <Link
+                      to={primaryAction.to}
+                      className="group block bg-anthracite rounded-2xl p-6 shadow-xl transition-all duration-300 hover:shadow-2xl hover:-translate-y-0.5"
+                    >
+                      <div className="w-12 h-12 rounded-2xl bg-white/[0.07] border border-white/[0.06] flex items-center justify-center mb-5 transition-colors group-hover:bg-primary/20">
+                        <ActionIcon className="w-6 h-6 text-white/60 group-hover:text-primary transition-colors" />
+                      </div>
+                      <h3 className="text-heading-sm font-heading font-bold text-white mb-2">
+                        {primaryAction.label}
+                      </h3>
+                      <p className="text-body-sm text-white/40 leading-relaxed mb-5">
+                        {primaryAction.description}
+                      </p>
+                      <div className="flex items-center gap-2 text-primary text-body-sm font-body font-semibold">
+                        Go now
+                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                      </div>
+                    </Link>
+                  );
+                })()}
+              </motion.div>
+
+              {/* Quick Links */}
               <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.3 }}
-                className="bg-slate-800 rounded-[24px] p-8 text-white shadow-xl relative overflow-hidden group"
+                {...fadeUp(0.21)}
+                className="bg-white border border-slate-100 rounded-2xl p-6 shadow-premium"
               >
-                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-[40px] -translate-y-1/2 translate-x-1/2" />
-
-                <h3 className="text-xl font-bold mb-2">Quick Actions</h3>
-                <p className="text-slate-400 text-sm mb-6">Common tasks for your exam preparation</p>
-
-                <div className="space-y-3">
-                  {!student?.qr_generated ? (
-                    <Link to="/student/register" className="flex items-center justify-between p-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all group-hover:border-white/20">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                          <User className="w-4 h-4 text-white" />
-                        </div>
-                        <span className="font-medium text-sm">Complete Registration</span>
+                <h3 className="text-micro uppercase tracking-widest font-body font-bold text-stone mb-4">
+                  Quick Links
+                </h3>
+                <div className="space-y-1">
+                  {[
+                    {
+                      to: '/student/qr-code',
+                      Icon: QrCode,
+                      label: 'Exam Pass',
+                      sub: student?.qr_generated ? 'Ready to print' : 'Not ready yet',
+                      ready: !!student?.qr_generated,
+                    },
+                    {
+                      to: '/student/verification',
+                      Icon: FileText,
+                      label: 'Clearance Status',
+                      sub: `${completedCount} / 3 steps complete`,
+                      ready: completedCount === 3,
+                    },
+                    {
+                      to: '/student/register',
+                      Icon: User,
+                      label: 'Registration',
+                      sub: student?.registration_complete ? 'Completed' : 'Pending',
+                      ready: !!student?.registration_complete,
+                    },
+                    {
+                      to: '/settings',
+                      Icon: Shield,
+                      label: 'Account Settings',
+                      sub: 'Profile & preferences',
+                      ready: true,
+                    },
+                  ].map(({ to, Icon, label, sub, ready }) => (
+                    <Link
+                      key={to}
+                      to={to}
+                      className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors group"
+                    >
+                      <div
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                          ready ? 'bg-success/10 text-success' : 'bg-slate-100 text-slate-400'
+                        }`}
+                      >
+                        <Icon className="w-4 h-4" />
                       </div>
-                      <ChevronRight className="w-4 h-4 text-slate-400" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-body-sm font-body font-semibold text-anthracite leading-tight">
+                          {label}
+                        </p>
+                        <p className="text-micro text-stone">{sub}</p>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-400 shrink-0 transition-colors" />
                     </Link>
-                  ) : (
-                    <Link to="/student/qr-code" className="flex items-center justify-between p-4 rounded-xl bg-success/20 hover:bg-success/30 border border-success/30 transition-all">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-success flex items-center justify-center">
-                          <QrCode className="w-4 h-4 text-white" />
-                        </div>
-                        <div>
-                          <span className="font-bold text-sm block">Download Exam Pass</span>
-                          <span className="text-[10px] text-success-300 uppercase tracking-wider font-bold">Ready</span>
-                        </div>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-white" />
-                    </Link>
-                  )}
-
-                  <button className="w-full flex items-center justify-between p-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all text-left">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-slate-700 flex items-center justify-center">
-                        <FileText className="w-4 h-4 text-slate-300" />
-                      </div>
-                      <span className="font-medium text-sm text-slate-300">View Guidelines</span>
-                    </div>
-                  </button>
+                  ))}
                 </div>
               </motion.div>
 
-              {/* Exam Tips / Info */}
+              {/* Exam Guidelines */}
               <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.4 }}
-                className="bg-white rounded-[24px] p-8 shadow-premium border border-slate-100"
+                {...fadeUp(0.27)}
+                className="bg-white border border-slate-100 rounded-2xl p-6 shadow-premium"
               >
-                <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
-                  <AlertTriangle className="w-5 h-5 text-amber-500" />
-                  Exam Guidelines
-                </h3>
-                <ul className="space-y-4">
-                  <li className="flex gap-3 text-sm text-slate-500">
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-300 mt-2 shrink-0" />
-                    <span>Ensure your exam pass is printed clearly in color.</span>
-                  </li>
-                  <li className="flex gap-3 text-sm text-slate-500">
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-300 mt-2 shrink-0" />
-                    <span>Arrive 30 minutes before your scheduled time.</span>
-                  </li>
-                  <li className="flex gap-3 text-sm text-slate-500">
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-300 mt-2 shrink-0" />
-                    <span>Biometric verification is mandatory at the entrance.</span>
-                  </li>
+                <div className="flex items-center gap-2 mb-4">
+                  <BookOpen className="w-4 h-4 text-stone" />
+                  <h3 className="text-micro uppercase tracking-widest font-body font-bold text-stone">
+                    Exam Guidelines
+                  </h3>
+                </div>
+                <ul className="space-y-3">
+                  {[
+                    'Print your exam pass in colour before your exam date.',
+                    'Arrive at least 30 minutes before the scheduled time.',
+                    'Present your QR pass at the hall entrance for scanning.',
+                    'Each code is single-use — it cannot be reused.',
+                  ].map((tip, i) => (
+                    <li key={i} className="flex gap-3">
+                      <span className="w-5 h-5 rounded-full bg-slate-100 text-stone text-micro font-body font-bold flex items-center justify-center shrink-0 mt-0.5">
+                        {i + 1}
+                      </span>
+                      <p className="text-body-sm text-stone leading-relaxed">{tip}</p>
+                    </li>
+                  ))}
                 </ul>
               </motion.div>
             </div>
