@@ -174,6 +174,9 @@ const AdminDashboard = () => {
           .select('id, user_id, matric_number, department, faculty, level, payment_verified, qr_generated, registration_complete, created_at')
           .order('created_at', { ascending: false });
 
+        // trendSource is the freshly-fetched data (not the stale `students` state)
+        let trendSource = mockStudents;
+
         if (!error && supaStudents && supaStudents.length > 0) {
           // Fetch matching profiles in one batch (profiles.id = students.user_id = auth.users.id)
           const userIds = supaStudents.map(s => s.user_id);
@@ -197,12 +200,13 @@ const AdminDashboard = () => {
             registeredAt: s.created_at,
           }));
           setStudents(mapped);
+          trendSource = mapped; // use live data, not stale `students` closure
         }
-        // If Supabase fails or returns empty, keep mock data
+        // If Supabase fails or returns empty, keep mock data (trendSource remains mockStudents)
 
         // Build registration trend (last 7 days)
         const trend = [];
-        const allData = students.length > 0 ? students : mockStudents;
+        const allData = trendSource;
         for (let i = 6; i >= 0; i--) {
           const day = startOfDay(subDays(new Date(), i));
           const nextDay = startOfDay(subDays(new Date(), i - 1));
