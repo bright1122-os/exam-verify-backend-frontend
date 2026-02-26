@@ -22,7 +22,7 @@ jobs:
 
     env:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      VERCEL_PROJECT_ID: prj_ZeYQULfvJvpdlJ1McONSdMoYA00G
+      VERCEL_PROJECT_ID: exam-verify-system-yv8p
 
     steps:
       - name: Verify required secrets are present
@@ -180,6 +180,6 @@ jobs:
               -X POST "https://api.vercel.com/v13/deployments" \
               -H "Authorization: Bearer ${VERCEL_TOKEN}" \
               -H "Content-Type: application/json" \
-              -d "{\"deploymentId\": \"${LATEST_DEPLOY_ID}\", \"name\": \"exam-verify-system\"}")
+              -d "{\"deploymentId\": \"${LATEST_DEPLOY_ID}\", \"name\": \"exam-verify-system-yv8p\"}")
             echo "✓ Redeploy triggered (HTTP $REDEPLOY_RESP)"
           fi
