@@ -22,11 +22,29 @@ jobs:
     runs-on: ubuntu-latest
     name: Build & deploy to Vercel
 
+    # VERCEL_TOKEN is set at job level so the CLI picks it up automatically
+    # (no --token flag needed; Vercel CLI reads VERCEL_TOKEN from env natively)
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
     defaults:
       run:
         working-directory: exam-verify-system
 
     steps:
+      - name: Verify required secrets are set
+        run: |
+          MISSING=""
+          [ -z "${{ secrets.VERCEL_TOKEN }}" ]      && MISSING="$MISSING VERCEL_TOKEN"
+          [ -z "${{ secrets.VERCEL_ORG_ID }}" ]     && MISSING="$MISSING VERCEL_ORG_ID"
+          [ -z "${{ secrets.VERCEL_PROJECT_ID }}" ] && MISSING="$MISSING VERCEL_PROJECT_ID"
+          if [ -n "$MISSING" ]; then
+            echo "✗ Missing GitHub Secrets:$MISSING"
+            echo "Add them at: GitHub repo → Settings → Secrets and variables → Actions"
+            exit 1
+          fi
+          echo "✓ All secrets present"
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -50,20 +68,15 @@ jobs:
             "${{ secrets.VERCEL_ORG_ID }}" \
             "${{ secrets.VERCEL_PROJECT_ID }}" \
             > .vercel/project.json
+          echo "✓ .vercel/project.json written"
 
       - name: Pull Vercel environment & project config
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
+        run: vercel pull --yes --environment=production
 
       - name: Build project
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: vercel build --prod --token "$VERCEL_TOKEN"
+        run: vercel build --prod
 
       - name: Deploy to Vercel (production)
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
-          URL=$(vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN")
+          URL=$(vercel deploy --prebuilt --prod)
           echo "Deployed to: $URL"
