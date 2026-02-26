@@ -168,27 +168,29 @@ const AdminDashboard = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Attempt to fetch from Supabase
+        // Fetch students (students.user_id → auth.users, no direct FK to profiles — query separately)
         const { data: supaStudents, error } = await supabase
           .from('students')
-          .select(`
-            id,
-            matric_number,
-            department,
-            faculty,
-            level,
-            payment_verified,
-            qr_generated,
-            registration_complete,
-            created_at,
-            profiles:user_id (name, email)
-          `)
+          .select('id, user_id, matric_number, department, faculty, level, payment_verified, qr_generated, registration_complete, created_at')
           .order('created_at', { ascending: false });
 
+        // trendSource is the freshly-fetched data (not the stale `students` state)
+        let trendSource = mockStudents;
+
         if (!error && supaStudents && supaStudents.length > 0) {
+          // Fetch matching profiles in one batch (profiles.id = students.user_id = auth.users.id)
+          const userIds = supaStudents.map(s => s.user_id);
+          const { data: profilesData } = await supabase
+            .from('profiles')
+            .select('id, full_name')
+            .in('id', userIds);
+
+          const profileMap = {};
+          profilesData?.forEach(p => { profileMap[p.id] = p; });
+
           const mapped = supaStudents.map((s) => ({
             id: s.id,
-            name: s.profiles?.name || 'N/A',
+            name: profileMap[s.user_id]?.full_name || 'N/A',
             matricNumber: s.matric_number,
             department: s.department,
             level: s.level,
@@ -198,12 +200,13 @@ const AdminDashboard = () => {
             registeredAt: s.created_at,
           }));
           setStudents(mapped);
+          trendSource = mapped; // use live data, not stale `students` closure
         }
-        // If Supabase fails or returns empty, keep mock data
+        // If Supabase fails or returns empty, keep mock data (trendSource remains mockStudents)
 
         // Build registration trend (last 7 days)
         const trend = [];
-        const allData = students.length > 0 ? students : mockStudents;
+        const allData = trendSource;
         for (let i = 6; i >= 0; i--) {
           const day = startOfDay(subDays(new Date(), i));
           const nextDay = startOfDay(subDays(new Date(), i - 1));
@@ -290,7 +293,7 @@ const AdminDashboard = () => {
 
   return (
     <PageTransition>
-      <div className="min-h-screen bg-parchment py-12">
+      <div className="min-h-screen bg-parchment pt-28 pb-12">
         <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <motion.div

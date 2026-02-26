@@ -1,29 +1,11 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build"
-    },
-    {
-      "src": "server/src/app.js",
-      "use": "@vercel/node"
-    }
-  ],
+  "framework": "vite",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
   "rewrites": [
-    {
-      "source": "/api/v1/(.*)",
-      "destination": "/server/src/app.js"
-    },
     {
       "source": "/(.*)",
       "destination": "/index.html"
     }
-  ],
-  "env": {
-    "MONGODB_URI": "mongodb+srv://agwunobisomtochukwu_db_user:sr32R1MIdaZRHrIk@cluster0.klrslgz.mongodb.net/?appName=Cluster0",
-    "NODE_ENV": "production",
-    "JWT_SECRET": "exam_verify_prod_secret_unique_9988",
-    "QR_ENCRYPTION_KEY": "12345678901234567890123456789012"
-  }
+  ]
 }

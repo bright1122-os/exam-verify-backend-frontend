@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, EyeOff, CheckCircle, ShieldCheck, ArrowRight, Loader2 } from 'lucide-react';
@@ -8,13 +8,22 @@ import { useStore } from '../../store/useStore';
 export default function Login() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { signIn, signInWithGoogle, userType } = useStore();
+  const { signIn, signInWithGoogle, userType, isAuthenticated } = useStore();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [authSuccess, setAuthSuccess] = useState(false);
+
+  // Watch for auth + userType to be resolved, then redirect
+  useEffect(() => {
+    if (!authSuccess || !isAuthenticated) return;
+    if (userType === 'examiner') navigate('/examiner/dashboard', { replace: true });
+    else if (userType === 'admin') navigate('/admin/dashboard', { replace: true });
+    else if (userType === 'student') navigate('/student/dashboard', { replace: true });
+    // userType is still loading — keep waiting
+  }, [authSuccess, isAuthenticated, userType, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,16 +33,11 @@ export default function Login() {
     try {
       await signIn(email, password);
       setAuthSuccess(true);
-
-      setTimeout(() => {
-        if (userType === 'examiner') navigate('/examiner/dashboard');
-        else if (userType === 'admin') navigate('/admin/dashboard');
-        else navigate('/student/dashboard');
-      }, 1000);
-
+      // Redirect happens via useEffect once userType resolves
     } catch (error) {
       toast.error(error.message || 'Verification failed. Please check credentials.');
       setLoading(false);
+      setAuthSuccess(false);
     }
   };
 

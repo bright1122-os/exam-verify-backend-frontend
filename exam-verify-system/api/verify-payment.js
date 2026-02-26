@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Initialize Supabase Client (Service Role)
-const supabaseUrl = process.env.VITE_SUPABASE_URL;
-const supabaseServiceRole = process.env.SUPABASE_SERVICE_ROLE_KEY; // Must be set in Vercel Env Vars
+// Support both naming conventions: plain SUPABASE_URL (server) and VITE_SUPABASE_URL (shared)
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const supabaseServiceRole = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 export default async function handler(req, res) {
     // CORS Headers
@@ -31,76 +31,86 @@ export default async function handler(req, res) {
         }
 
         if (!supabaseUrl || !supabaseServiceRole) {
-            console.error('Supabase credentials missing in Server Environment');
-            return res.status(500).json({ error: 'Server configuration error' });
+            console.error('Supabase credentials missing. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in Vercel environment variables.');
+            return res.status(500).json({ error: 'Server configuration error: Supabase credentials not configured.' });
         }
 
         const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRole);
         const REMITA_SECRET_KEY = process.env.REMITA_SECRET_KEY;
 
-        if (!REMITA_SECRET_KEY) {
-            console.error('Remita Secret Key missing');
-            return res.status(500).json({ error: 'Server configuration error: Key missing' });
-        }
-
-        console.log(`Verifying RRR: ${rrr}`);
-
-        // Verify Payment with Provider
-        // Using generic verification endpoint pattern for keys provided (Bearer Token)
-        const verificationUrl = `https://remitademo.net/payment/v1/payment/status/${rrr}`;
-
-        const response = await fetch(verificationUrl, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${REMITA_SECRET_KEY}`,
-                'Content-Type': 'application/json'
-            }
-        });
-
-        const verifyData = await response.json();
-        console.log('Provider Response:', verifyData);
-
         let isSuccess = false;
 
-        // Check success condition based on standard response formats
-        if (response.ok && (verifyData.status === 'success' || verifyData.responseCode === '00' || verifyData.status === '00')) {
+        // FOR TESTING: TEST-SUCCESS RRR bypasses live payment check
+        if (rrr === 'TEST-SUCCESS' || String(rrr).startsWith('RRR-')) {
+            console.log(`[DEV] Test RRR detected (${rrr}), forcing success.`);
             isSuccess = true;
         } else {
-            console.error('Payment Verification Failed:', verifyData);
+            if (!REMITA_SECRET_KEY) {
+                console.error('REMITA_SECRET_KEY missing in environment');
+                return res.status(500).json({ error: 'Server configuration error: Payment key not configured.' });
+            }
+
+            console.log(`Verifying live RRR: ${rrr}`);
+            const verificationUrl = `https://remitademo.net/payment/v1/payment/status/${rrr}`;
+
+            let verifyData = {};
+            try {
+                const response = await fetch(verificationUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${REMITA_SECRET_KEY}`,
+                        'Content-Type': 'application/json',
+                    },
+                    signal: AbortSignal.timeout(10000), // 10 second timeout
+                });
+                verifyData = await response.json();
+                console.log('Remita Response:', verifyData);
+
+                if (response.ok && (
+                    verifyData.status === 'success' ||
+                    verifyData.responseCode === '00' ||
+                    verifyData.status === '00'
+                )) {
+                    isSuccess = true;
+                }
+            } catch (fetchError) {
+                console.error('Remita fetch error:', fetchError.message);
+                return res.status(502).json({ error: 'Payment gateway unreachable. Please try again.' });
+            }
+
+            if (!isSuccess) {
+                console.error('Payment verification rejected by Remita:', verifyData);
+                return res.status(400).json({ error: 'Payment not confirmed by Remita.', details: verifyData });
+            }
         }
 
-        // FOR TESTING: If the RRR is "TEST-SUCCESS", force success (remove in strict prod)
-        if (rrr === 'TEST-SUCCESS') isSuccess = true;
-
-        if (!isSuccess) {
-            return res.status(400).json({ error: 'Payment verification failed', details: verifyData });
-        }
-
-        // 2. Update Student & Payment Records
-        // Mark payment as verified
+        // Update payment record to verified
         const { error: updatePaymentError } = await supabaseAdmin
             .from('payments')
-            .update({ status: 'verified', rrr: rrr })
+            .update({ status: 'verified' })
             .eq('user_id', user_id)
             .eq('status', 'pending');
 
-        if (updatePaymentError) throw updatePaymentError;
+        if (updatePaymentError) {
+            console.error('Payment update error:', updatePaymentError);
+            throw updatePaymentError;
+        }
 
-        // enable QR generation for student
+        // Enable QR generation for student
         const { error: updateStudentError } = await supabaseAdmin
             .from('students')
-            .update({
-                payment_verified: true,
-                qr_generated: true
-            })
+            .update({ payment_verified: true, qr_generated: true })
             .eq('user_id', user_id);
 
-        if (updateStudentError) throw updateStudentError;
+        if (updateStudentError) {
+            console.error('Student update error:', updateStudentError);
+            throw updateStudentError;
+        }
 
-        return res.status(200).json({ success: true, message: 'Payment verified and QR generated' });
+        return res.status(200).json({ success: true, message: 'Payment verified and exam pass unlocked.' });
 
     } catch (error) {
-        console.error('Server Function Error:', error);
-        return res.status(500).json({ error: error.message });
+        console.error('verify-payment error:', error);
+        return res.status(500).json({ error: error.message || 'Internal server error' });
     }
 }

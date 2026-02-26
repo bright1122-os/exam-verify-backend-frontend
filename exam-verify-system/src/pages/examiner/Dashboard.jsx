@@ -185,7 +185,7 @@ export default function ExaminerDashboard() {
 
   return (
     <PageTransition>
-      <div className="min-h-screen bg-slate-50 py-12 px-4 font-body text-slate-900">
+      <div className="min-h-screen bg-slate-50 pt-28 pb-12 px-4 font-body text-slate-900">
         <div className="max-w-[1200px] mx-auto">
           {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
@@ -283,8 +283,8 @@ export default function ExaminerDashboard() {
                     <Clock className="w-5 h-5 text-slate-400" />
                     Recent Activity
                   </h2>
-                  <Link to="/examiner/history" className="text-sm font-bold text-primary hover:text-primary-600 transition-colors">
-                    View All
+                  <Link to="/examiner/scan" className="text-sm font-bold text-primary hover:text-primary-600 transition-colors">
+                    Go to Scanner
                   </Link>
                 </div>
 

@@ -66,7 +66,7 @@ export default function PrintQR() {
 
   return (
     <PageTransition>
-      <div className="min-h-screen bg-[#FCFAF7] py-8 px-4 font-body text-[#333331]">
+      <div className="min-h-screen bg-[#FCFAF7] pt-24 pb-8 px-4 font-body text-[#333331]">
         <div className="max-w-lg mx-auto">
           {/* Back Link */}
           <Link
@@ -131,8 +131,12 @@ export default function PrintQR() {
 
               {/* Status */}
               <div className="text-center mb-4">
-                {/* Simplified status for now as we don't verify 'used' yet without backend logic, assume valid if generated */}
-                {studentData?.qr_generated ? (
+                {studentData?.qr_generated && studentData?.qr_used ? (
+                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-full border border-red-200">
+                    <AlertTriangle className="w-4 h-4" />
+                    <span className="text-sm font-heading font-medium">Already Used — Entry Recorded</span>
+                  </div>
+                ) : studentData?.qr_generated ? (
                   <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#E3F2E6] text-[#2E7D32] rounded-full border border-[#2E7D32]/20">
                     <CheckCircle className="w-4 h-4" />
                     <span className="text-sm font-heading font-medium">Valid - Ready for Use</span>

@@ -107,6 +107,13 @@ export const useStore = create((set, get) => ({
     if (error) throw error;
   },
 
+  // Update student data in store (used after registration steps complete locally)
+  updateStudentData: (updates) => {
+    set((state) => ({
+      studentData: state.studentData ? { ...state.studentData, ...updates } : updates,
+    }));
+  },
+
   // Logout
   signOut: async () => {
     await supabase.auth.signOut();

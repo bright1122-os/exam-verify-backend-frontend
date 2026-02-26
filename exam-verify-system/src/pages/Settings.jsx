@@ -16,6 +16,7 @@ import {
   Smartphone,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
+import { supabase } from '../lib/supabase';
 import { PageTransition } from '../components/layout/PageTransition';
 import toast from 'react-hot-toast';
 
@@ -43,12 +44,60 @@ export default function Settings() {
     language: 'en',
   });
 
+  const [passwords, setPasswords] = useState({ newPass: '', confirm: '' });
+
+  // Shared fake-save for Notifications and Appearance (UI-only preferences, no backend storage)
   const handleSave = async () => {
     setSaving(true);
-    // Simulate save
     await new Promise(resolve => setTimeout(resolve, 800));
     setSaving(false);
-    toast.success('Settings saved successfully');
+    toast.success('Preferences saved');
+  };
+
+  // Real profile save — updates auth metadata + profiles table
+  const handleProfileSave = async () => {
+    setSaving(true);
+    try {
+      const { error: metaError } = await supabase.auth.updateUser({ data: { name: profile.name } });
+      if (metaError) throw metaError;
+      const { error: dbError } = await supabase
+        .from('profiles')
+        .update({ full_name: profile.name })
+        .eq('id', user.id);
+      if (dbError) throw dbError;
+      toast.success('Profile saved successfully');
+    } catch (error) {
+      toast.error(error.message || 'Failed to save profile');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Real password update — calls supabase.auth.updateUser
+  const handlePasswordUpdate = async () => {
+    if (!passwords.newPass || !passwords.confirm) {
+      toast.error('Please fill in both password fields');
+      return;
+    }
+    if (passwords.newPass !== passwords.confirm) {
+      toast.error('Passwords do not match');
+      return;
+    }
+    if (passwords.newPass.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+    setSaving(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: passwords.newPass });
+      if (error) throw error;
+      toast.success('Password updated successfully');
+      setPasswords({ newPass: '', confirm: '' });
+    } catch (error) {
+      toast.error(error.message || 'Failed to update password');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const tabs = [
@@ -60,7 +109,7 @@ export default function Settings() {
 
   return (
     <PageTransition>
-      <div className="min-h-screen bg-slate-50 py-12 px-4 font-body text-slate-900">
+      <div className="min-h-screen bg-slate-50 pt-28 pb-12 px-4 font-body text-slate-900">
         <div className="max-w-[1000px] mx-auto">
           {/* Header */}
           <motion.div
@@ -196,7 +245,7 @@ export default function Settings() {
 
                   <div className="mt-8 pt-6 border-t border-slate-100 flex justify-end">
                     <button
-                      onClick={handleSave}
+                      onClick={handleProfileSave}
                       disabled={saving}
                       className="flex items-center gap-2 px-6 py-3 bg-primary text-white text-sm font-bold rounded-xl hover:shadow-lg hover:shadow-primary/20 transition-all disabled:opacity-50"
                     >
@@ -358,26 +407,15 @@ export default function Settings() {
                     <div className="space-y-6">
                       <div>
                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                          Current Password
-                        </label>
-                        <div className="relative">
-                          <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                          <input
-                            type="password"
-                            placeholder="Enter current password"
-                            className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
                           New Password
                         </label>
                         <div className="relative">
                           <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                           <input
                             type="password"
-                            placeholder="Enter new password"
+                            value={passwords.newPass}
+                            onChange={(e) => setPasswords({ ...passwords, newPass: e.target.value })}
+                            placeholder="Min. 6 characters"
                             className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                           />
                         </div>
@@ -390,7 +428,9 @@ export default function Settings() {
                           <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                           <input
                             type="password"
-                            placeholder="Confirm new password"
+                            value={passwords.confirm}
+                            onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
+                            placeholder="Repeat new password"
                             className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                           />
                         </div>
@@ -399,7 +439,7 @@ export default function Settings() {
 
                     <div className="mt-8 pt-6 border-t border-slate-100 flex justify-end">
                       <button
-                        onClick={handleSave}
+                        onClick={handlePasswordUpdate}
                         disabled={saving}
                         className="flex items-center gap-2 px-6 py-3 bg-primary text-white text-sm font-bold rounded-xl hover:shadow-lg hover:shadow-primary/20 transition-all disabled:opacity-50"
                       >
