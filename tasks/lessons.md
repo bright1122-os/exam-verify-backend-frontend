@@ -303,6 +303,35 @@ RLS in Supabase is deny-by-default. INSERT and SELECT are independent permission
 
 ---
 
+## Lesson 013 — PostgREST Only Resolves Joins via Direct FK — Indirect FKs Through auth.users Require Two Queries
+
+**Discovered:** 2026-02-26 (Session 6 — Admin Dashboard audit)
+
+**Mistake Pattern:**
+`AdminDashboard.jsx` tried `profiles:user_id (name, email)` to join students → profiles. This is invalid because:
+1. `students.user_id` FK points to `auth.users.id` — NOT to `profiles.id`
+2. Even though `profiles.id` also references `auth.users.id`, PostgREST cannot resolve an indirect join through `auth.users`
+3. Additionally, `profiles` table has `full_name` (not `name`), and no `email` field
+4. Because code fell back to mock data silently, this bug was invisible — admin always saw demo students, never real ones
+
+**Root Cause:**
+Same root cause as ScanPortal bug (fixed in Session 5): when a table has a FK to `auth.users.id` (not to another public table), PostgREST cannot auto-join to a second table that also references `auth.users.id`. The relationship exists logically but not as a direct FK PostgREST can follow.
+
+**Impact:**
+Admin dashboard always showed 8 hardcoded mock students regardless of actual registrations in the DB.
+
+**Prevention Rule:**
+- When `table_a.col` and `table_b.id` both reference `auth.users.id`, they are NOT directly FK-linked to each other — query them separately
+- Pattern: query students, collect `user_id`s, query `profiles.in('id', userIds)`, merge with a lookup map
+- Always check the actual column name in the target table: `profiles.full_name` NOT `profiles.name`
+
+**How to Detect:**
+- Run the query in Supabase Table Editor — if PostgREST returns an error like "Could not resolve foreign key", the join is invalid
+- After any PostgREST join change, verify with a manual SQL: `SELECT s.id, p.full_name FROM students s JOIN profiles p ON p.id = s.user_id LIMIT 5`
+- If the admin dashboard shows the same mock student names every session, the Supabase fetch is failing and falling back to mock data
+
+---
+
 ## Template for New Lessons
 
 ```

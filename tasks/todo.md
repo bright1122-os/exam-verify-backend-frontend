@@ -293,6 +293,63 @@ After setting env vars and running the SQL migration, trigger a new Vercel deplo
 
 ---
 
+---
+
+## Session: 2026-02-26 — Full System Audit (Priorities A–E)
+
+### Status: COMPLETE
+
+**Goal:** Move from "code patched" to "system actually works" — upload flow validation, schema/RLS/trigger audit, UI/UX functional audit, Remita flow check, documentation sync.
+
+### Priority A — Supabase Upload Flow Final Validation
+- [x] Confirmed photos bucket defined in 20260225000001_complete_schema.sql (public, 10MB, jpg/png/webp)
+- [x] Confirmed storage policies: photos_public_read, photos_authenticated_upload (auth.uid() IS NOT NULL), photos_own_delete
+- [x] Confirmed getPublicUrl() called correctly — returns synchronous publicUrl ✅
+- [x] Confirmed photo_url stored in students INSERT ✅
+- [x] Confirmed StudentDashboard + ScanPortal both render photo_url ✅
+- VERDICT: Upload flow is correct end-to-end. Bucket must be created by running the SQL migration.
+
+### Priority B — Schema/RLS/Trigger Audit
+- [x] All 4 tables have all required columns (including qr_used, qr_used_at)
+- [x] profiles: SELECT ✅, INSERT ✅, UPDATE ✅
+- [x] students: SELECT (own) ✅, SELECT (examiner) ✅, INSERT ✅, UPDATE (own) ✅, ALL (admin) ✅
+- [x] payments: SELECT ✅, INSERT ✅, ALL (admin) ✅
+- [x] verifications: INSERT (examiner) ✅, SELECT (examiner) ✅ (from fix migration), SELECT (own) ✅, ALL (admin) ✅, SELECT (student) ✅
+- [x] on_verification_approved SECURITY DEFINER trigger ✅
+- [x] handle_new_user trigger (auto-creates profile on signup) ✅
+- VERDICT: Schema and RLS are complete. Both migrations must be run.
+
+### Priority C — UI/UX Functional Audit — 2 Bugs Fixed
+- [x] BUG FOUND: Admin Dashboard always showed mock data — profiles:user_id join invalid (no FK from students.user_id → profiles); wrong field name (name vs full_name)
+  - FIX: Replaced with two-query approach — students then profiles batch by user_id, map with full_name ✅
+- [x] BUG FOUND: PrintQR showed "Valid - Ready for Use" even after qr_used=true (security gap)
+  - FIX: Added qr_used check — now shows "Already Used — Entry Recorded" in red when qr_used=true ✅
+- [x] Minor: "View Guidelines" button in StudentDashboard has no onClick — no action taken (no guidelines page exists)
+- [x] All routes confirmed working (App.jsx): Home, Login, SignUp, AuthCallback, all student/examiner/admin pages ✅
+- [x] SignUp reads ?role=student/?role=examiner param correctly ✅
+- [x] VerificationStatus: correct queries, shows clearance progress + scan history ✅
+- [x] ExaminerDashboard realtime subscription via Supabase postgres_changes ✅
+- Build: vite build → ✓ 2564 modules, 0 errors ✓
+
+### Priority D — Remita Flow Reality Check
+- [x] Demo flow functional end-to-end: rrr='TEST-SUCCESS' bypasses Remita → sets payment_verified=true, qr_generated=true
+- [x] Live RRR flow: calls remitademo.net/payment/v1/payment/status/:rrr — needs REMITA_SECRET_KEY in Vercel ✅
+- [x] REMITA_SECRET_KEY already set per claude.md
+- [x] Production gap: no real RRR generation endpoint — student always gets TEST-SUCCESS hardcoded in Register.jsx
+- VERDICT: Demo functional. Production needs Remita merchant account + RRR generation endpoint.
+
+### Priority E — Documentation Sync
+- [x] tasks/todo.md updated with this session
+- [x] tasks/lessons.md updated with Lesson 013
+- [x] claude.md changelog updated with Session 6 entry
+
+### Verification Evidence
+- vite build: ✓ 2564 modules, 0 errors
+- Admin Dashboard fix: two-query pattern, full_name field, no more profile join error
+- PrintQR fix: three-state status (Valid / Already Used / Not Generated)
+
+---
+
 ## Completed Tasks Archive
 
 | Date | Task | Result |
@@ -300,3 +357,4 @@ After setting env vars and running the SQL migration, trigger a new Vercel deplo
 | 2026-02-24 | Project handoff initialization — create operational files | Complete |
 | 2026-02-24 | Bug audit (7 bugs), security fix, architecture docs | Complete — 3 real bugs fixed, 4 misdiagnosed, secrets removed, claude.md created |
 | 2026-02-25 | Full stabilization pass (10 bugs) + image upload root-cause + architecture docs | Complete — all fixes applied, build passes, see session entry above |
+| 2026-02-26 | Full system audit (Priorities A–E) — upload validation, schema/RLS/trigger audit, UI/UX audit, Remita review, doc sync | Complete — 2 bugs fixed (admin dashboard join, PrintQR used QR status), all flows verified |

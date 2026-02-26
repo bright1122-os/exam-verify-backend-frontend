@@ -168,27 +168,26 @@ const AdminDashboard = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Attempt to fetch from Supabase
+        // Fetch students (students.user_id → auth.users, no direct FK to profiles — query separately)
         const { data: supaStudents, error } = await supabase
           .from('students')
-          .select(`
-            id,
-            matric_number,
-            department,
-            faculty,
-            level,
-            payment_verified,
-            qr_generated,
-            registration_complete,
-            created_at,
-            profiles:user_id (name, email)
-          `)
+          .select('id, user_id, matric_number, department, faculty, level, payment_verified, qr_generated, registration_complete, created_at')
           .order('created_at', { ascending: false });
 
         if (!error && supaStudents && supaStudents.length > 0) {
+          // Fetch matching profiles in one batch (profiles.id = students.user_id = auth.users.id)
+          const userIds = supaStudents.map(s => s.user_id);
+          const { data: profilesData } = await supabase
+            .from('profiles')
+            .select('id, full_name')
+            .in('id', userIds);
+
+          const profileMap = {};
+          profilesData?.forEach(p => { profileMap[p.id] = p; });
+
           const mapped = supaStudents.map((s) => ({
             id: s.id,
-            name: s.profiles?.name || 'N/A',
+            name: profileMap[s.user_id]?.full_name || 'N/A',
             matricNumber: s.matric_number,
             department: s.department,
             level: s.level,
