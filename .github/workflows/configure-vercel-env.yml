@@ -20,18 +20,21 @@ jobs:
     runs-on: ubuntu-latest
     name: Set all Vercel environment variables
 
-    env:
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-
     steps:
       - name: Verify required secrets are present
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          REMITA_SECRET_KEY: ${{ secrets.REMITA_SECRET_KEY }}
         run: |
           MISSING=""
-          [ -z "${{ secrets.VERCEL_TOKEN }}" ]             && MISSING="$MISSING VERCEL_TOKEN"
-          [ -z "${{ secrets.VITE_SUPABASE_ANON_KEY }}" ]  && MISSING="$MISSING VITE_SUPABASE_ANON_KEY"
-          [ -z "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" ] && MISSING="$MISSING SUPABASE_SERVICE_ROLE_KEY"
-          [ -z "${{ secrets.REMITA_SECRET_KEY }}" ]        && MISSING="$MISSING REMITA_SECRET_KEY"
+          [ -z "$VERCEL_TOKEN" ]             && MISSING="$MISSING VERCEL_TOKEN"
+          [ -z "$VERCEL_PROJECT_ID" ]        && MISSING="$MISSING VERCEL_PROJECT_ID"
+          [ -z "$VITE_SUPABASE_ANON_KEY" ]   && MISSING="$MISSING VITE_SUPABASE_ANON_KEY"
+          [ -z "$SUPABASE_SERVICE_ROLE_KEY" ] && MISSING="$MISSING SUPABASE_SERVICE_ROLE_KEY"
+          [ -z "$REMITA_SECRET_KEY" ]        && MISSING="$MISSING REMITA_SECRET_KEY"
           if [ -n "$MISSING" ]; then
             echo "✗ Missing required GitHub Secrets:$MISSING"
             echo "Add them at: GitHub repo → Settings → Secrets and variables → Actions"
@@ -41,6 +44,8 @@ jobs:
 
       - name: Set environment variables in Vercel
         env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           REMITA_SECRET_KEY: ${{ secrets.REMITA_SECRET_KEY }}
@@ -164,6 +169,9 @@ jobs:
           echo "  Next step: trigger a new Vercel deployment to apply the changes."
 
       - name: Trigger Vercel redeploy
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
           echo "Requesting latest deployment redeploy..."
 
