@@ -22,7 +22,7 @@ jobs:
 
     env:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      VERCEL_PROJECT_ID: exam-verify-system-yv8p
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
     steps:
       - name: Verify required secrets are present
